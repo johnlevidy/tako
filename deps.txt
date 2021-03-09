@@ -1,0 +1,12 @@
+catch 2
+junit 4
+j2
+fastutil
+gsl-lite
+nlohmann json
+
+typing extensions for mypy
+pyyaml
+jinja2
+moreitertools
+tartanllama expected

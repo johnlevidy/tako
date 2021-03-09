@@ -1,0 +1,44 @@
+{
+    "endianness": {
+        "L": "LITTLE_ENDIAN",
+        "B": "BIG_ENDIAN"
+    },
+    "int_types": [
+        {
+            "jtype": "byte",
+            "bb_method_suffix": "",
+            "size_bytes": 1,
+            "class": "Integer"
+        },
+        {
+            "jtype": "short",
+            "bb_method_suffix": "Short",
+            "size_bytes": 2,
+            "class": "Integer"
+        },
+        {
+            "jtype": "int",
+            "bb_method_suffix": "Int",
+            "size_bytes": 4,
+            "class": "Integer"
+        },
+        {
+            "jtype": "long",
+            "bb_method_suffix": "Long",
+            "size_bytes": 8,
+            "class": "Integer"
+        },
+        {
+            "jtype": "float",
+            "bb_method_suffix": "Float",
+            "size_bytes": 4,
+            "class": "Float"
+        },
+        {
+            "jtype": "double",
+            "bb_method_suffix": "Double",
+            "size_bytes": 8,
+            "class": "Float"
+        }
+    ]
+}

@@ -1,0 +1,265 @@
+# Definitions
+
+*   The number of bytes in a byte string `s` is `len(s)`.
+*   `s[i]` is the byte at index `i` (where `0 <= i < len(s)`) in the byte string `s`.
+*   A byte string `a` is equal to another byte string `b` if `len(a) == len(b)` and for all `0 <= i < len(a)`, `a[i] == b[i]`.
+*   A _byte string_ `s` can be parsed into some type `T` as `parse<T>(s)`, if `s` represents a well-formed instance of T.
+    Note that `parse` isn't required to use all the bytes in `s`; it can still parse even if given too many bytes.
+*   An instance `a` of type `T` can be built into a byte string as `build(a)`.
+*   A type `P` (previous) is _compatible_ with another type `N` (next) if for any byte-string `s` which is a valid instance of `P`, `parse<N>(s)` is also valid --
+    the same byte string represents a valid instance of `N`. This is written as `P < N`.
+*   A type `P` (previous) is a _substitute_ for another type `N` if `P < N` (`P` is compatible with `N`) and if for any byte string `s` which is a valid instance of `P` and has no extra bytes,
+    `build(parse<N>(s)) == s`. The key property this provides is that a given string of bytes, whether parsed as `P` or `N`, will consume the same amount of bytes. This is written as `P << N`
+
+# Type Class
+
+1.  Integer
+    An integer is a fixed-width integer type. In practice, there will be multiple integer types of different widths, but for now assume a 32-bit int.
+2.  Struct
+    For a struct S:
+    *   Count(S) is the number of fields
+    *   S[i], for i in [0, Count(S)), is {name: Field Name, type: Field Type}. The name is critical; it is the difference between a struct and a tuple.
+        For example, consider the struct [(number_of_cupcakes, Integer)]. If someone adds a field to make it [(number_of_cupcakes, Integer), (number_of_cookies, Integer)], that is a compatible change.
+        But [(number_of_cookies, Integer), (number_of_cupcakes, Integer)] is not. But considering just tuples, you would have (int) -> (int, int), which is compatible.
+    *   Name(S): a struct can have all the same fields as another, but still be a different struct. The name is needed to make each struct a unique type.
+    *   A struct can be empty
+3.  Variant
+    For a Variant V:
+    *   Tags(V) is the set of tags (all integers)
+    *   Types(V) is the list of types (which do not have to be unique)
+    *   V[t] is the type associated with tag t in Tags(V)
+    *   Name(V): for the same reason a struct has a name
+    *   A variant where all the types are empty structs is essentially an Enum.
+
+# Substitution Requirements
+
+Some type `P` is a substitute for a type `N` (`P << N`), where both `P` and `N` are the same type-class, in the following cases:
+1.  Integer: always
+2.  Struct: the following conditions must hold:
+    *   `Name(P) == Name(N)`
+    *   `Count(P) == Count(N)`
+    *   For all `0 <= i < Count(P)`, `P[i].name == N[i].name` and `P[i].type << N[i].type`.
+3.  Variant: the following conditions must hold:
+    *   `Name(P) == Name(N)`
+    *   For each tag `t` in `Tags(P)`, `t` must be in `Tags(A)` and `A[t] << B[t]`
+
+Note there may be more cases where 'P << N':
+*   Someone changed the name of a struct or variant, but made no other change
+*   Someone changed the name of the field of a struct, but not the meaning of the value of that field
+*   Someone changed an Enum (Variant of empty structs) into an integer (this is kind of weird, but like the enum ONE, TWO, THREE was just changed to an integer).
+
+# Compatibility Requirements
+
+Some type `P` is a compatible with a type `N` (`P << N`), where both `P` and `N` are the same type-class, in the following cases:
+1.  Integer: always
+2.  Struct: the following conditions must hold:
+    *   `Name(P) == Name(N)`
+    *   `Count(P) >= Count(N)`
+    *   For all `0 <= i < Count(N) - 1`, `P[i].name == N[i].name` and `P[i].type << N[i].type`.
+    *   For `i = Count(N) - 1`, `P[i].name == N[i].name` and `P[i].type < N[i].type`.
+3.  Variant: the following conditions must hold:
+    *   `Name(P) == Name(N)`
+    *   For each tag `t` in `Tags(P)`, `t` must be in `Tags(A)` and `A[t] < B[t]`
+
+# Examples
+
+## Enum
+
+```
+struct Dog {}
+struct Cat {}
+struct Tiger {}
+
+variant Animal {
+    Dog = 1,
+    Cat = 2,
+}
+```
+
+```
+struct Dog {}
+struct Cat {}
+struct Tiger {}
+
+variant A {
+    Dog = 1,
+    Cat = 2,
+}
+variant B {
+    Dog = 1,
+    Cat = 2,
+    Tiger = 3,
+}
+```
+
+```
+struct Dog {}
+struct Cat {}
+struct Tiger {}
+
+variant A {
+    Dog = 1,
+    Cat = 2,
+}
+variant B {
+    Dog = 1,
+    Cat = 2,
+    Tiger = 3,
+}
+```
+
+
+`A < B``
+            It is clear that A < B.
+            There also is a function that converts B to A:
+                f(b) = if b == TIGER { CAT } else { b }
+            This function replaces TIGER with CAT.
+            Essentially, B is a newer version of enum A, which now has TIGER. Any value of A can be implicitly upgraded to B, and any value of B
+            can be downgraded, via the conversion function, to A.
+    2.  Structs. Consider 2 structs A and B.
+        *   A < B if Count(A) >= Count(B) and for all i in [1, Count(B)], A[i] < B[i].
+        Intuitively, A is a subset of B if A has _more_ fields, but the fields that it does have in common are all the same as those in B.
+        While A is "bigger" than B, A is a subset of B in the sense that it is more restrictive - the pool of all B values has some Count(B) fields, while the pool of all A values has more fields, and is thus smaller.
+
+        Example 1:
+        A = [int, int]
+        B = [int]
+
+        A < B
+        B -> A via setting the second field to some default value
+
+        Essentially, A is a newer version of B, and A can be easily converted to the older version by dropping some information,
+        but converting the older version to the newer version requires adding information.
+
+        Note that with enums, an older enum could always be implicitly converted to a newer enum, where with structs, a newer stuct can always be implicitly converted to an older version.
+
+        Example 2:
+        E1 = {DOG: 1, CAT: 2}
+        E2 = {DOG: 1, CAT: 2, TIGER: 3}
+        A = [E1]
+        B = [E2]
+
+        A < B
+        B -> A by converting the enum
+
+        Note that here, since no fields were added, the newer struct (B) is always a superset of the older struct (A). So you can implicitly convert the older struct to the newer struct
+        if you don't add fields.
+    3. Variants
+        Variants are roughly a more general case of enums. Let Tags[V] be the set of tags (integers) for some variant V, Types[V] be the list of types, and V[t] be the type associated with tag t in Tags[V].
+        Consider 2 variants, A and B.
+        A < B if for each tag t in Tags(B), if t is in Tags(A) and A[t] < B[t]
+
+        Example 1:
+        SA = [int]
+        SB = [int, int]
+        SC = [bool]
+
+        V1 = {1: SA, 2: SB}
+        V2 = {1: SA, 2: SB, 3: SC}
+
+        V1 < V2
+        V2 -> V1 by potentially dropping variant 3, or converting it to either variant 1 or 2
+
+        Adding a value to an enum allows the older enum to be implicitly converted to the newer enum. Converting the newer enum back to the older enum requires handling that new variant -- either dropping it, or making it an old variant.
+
+        Example 2:
+        SA1 = [int]
+        SA2 = [int, int]
+        SB1 = [bool]
+
+        V1 = {1: SA1, 2: SB1}
+        V2 = {1: SA2, 3: SB1}
+
+        V2 < V1
+        V1 -> V2 by performing an SA1 -> SA2  conversion.
+
+        Adding a field to a struct which appears in a variant allows converting the new variant back to the old variant, but requires computation to convert the old to the new.
+
+        Example 3:
+        E1 = {DOG: 1, CAT: 2}
+        E2 = {DOG: 1, CAT: 2, TIGER: 3}
+        SA1 = [E1]
+        SA2 = [E2]
+        SB1 = [int]
+
+        V1 = {1: SA1, 2: SB1}
+        V2 = {1: SA2, 2: SB1}
+
+        V1 < V2
+        V2 -> V1 by converting SA2 -> SA1
+
+        Using a newer enum in a stuct which appears in the variant allows converting the old variant to the new variant, but requires computation to convert the new variant to the old variant.
+3. Protocol Versioning Models
+    For all of these models, let us start with the following protocol:
+
+    E = {DOG: 1, CAT: 2}
+    SA = [E]
+    SB = [int]
+
+    V = {1: SA, 2: SB}
+
+    The user wants to add TIGER to E, making {DOG: 1, CAT: 2, TIGER: 3}
+
+    Consider the following versioning models:
+    1. Types are never changed, new types are added. In this case, the protocol would look like this before the change:
+        E1 = {DOG: 1, CAT: 2}
+        SA1 = [E1]
+        SB1 = [int]
+
+        V1 = {1: SA1, 2: SB1}
+
+        Note how every message has an explicit version number. After the change, the protcol would look like this:
+        E1 = {DOG: 1, CAT: 2}
+        E2 = {DOG: 1, CAT: 2, TIGER: 3}
+        SA1 = [E1]
+        SA2 = [E2]
+        SB1 = [int]
+
+        V1 = {1: SA1, 2: SB1}
+        V2 = {1: SA2, 2: SB1}
+
+        This change has the nice property that V1 < V2 (you can automatically upgrade from V1 to V2), but is rather verbose, since you are forced to propogate the change all the way up the message heirachy -- instead of just changing E, the user had to copy it and make E2, then also copy SA and V,
+        and make new versions of them as well.
+
+        Note though that a protocol generator can easily computer the < relations for all the types, and automatically generate conversion functions for the target language. In fact, if the user procides the TIGER -> CAT information, the protocol can generate conversion functions both ways
+        for every message type.
+    2. Protocols are never changed, and a new protocol is made. In this case, the old protocol would be in a file P1, and the new protocol, P2, would be:
+        E = {DOG: 1, CAT: 2, TIGER: 3}
+        SA = [E]
+        SB = [int]
+
+        V = {1: SA, 2: SB}
+
+        This change still has the nice property that P1.V < P2.V, and a generator could easily generate the conversion functions as in example 1. However, the uesr had to manually copy and paste the protocol file, and increment the version number to make this change.
+        The 2 protocols then have to be combined somehow to allow the generator to perform analysis and generate conversion functions.
+
+        Note that this approach can be reduced to approach 1 easily: the protocol generator just suffixes all the tyeps in both files and then joins them. However, then there will be 2 versions of SB, even though SB didn't change. The expansion would look like this:
+        E1 = {DOG: 1, CAT: 2}
+        E2 = {DOG: 1, CAT: 2, TIGER: 3}
+        SA1 = [E1]
+        SA2 = [E2]
+        SB1 = [int]
+        SB2 = [int]
+
+        V1 = {1: SA1, 2: SB1}
+        V2 = {1: SA2, 2: SB2}
+
+        The compilier could then analyze this, and produce all the required conversions. There would be an SB1 <-> SB2 conversion pair, but in practice that shouldn't matter. This also has the advantage that each copy of the protocol forms a "version set": a client can simply
+        identify to the server whch version it is, and the server knows the entire set of messages it can sent to the client. With approach 1, version sets exist, but they are tricky: you have to trace types starting from some entrypoint (for example, you would
+        find all the types reachable from V2 as E2, SA2, SB1 and all the types reachable from V1 as E1, SA1, SB1, and those would define the version sets). That requires a single entrypoint though, which is a bit annoying, and elevates the version of the entrypoint type
+        to the version for the entire protocol.
+
+        Overall though, approach 2 is nice because it is very simple: you copy the protocol, then just make the change you want, and you are done. Yes, you copied more than was strictly needed, but with the generated conversion funcinos, it won't matter.
+    3.  Instead of copying the file, use git. Make the change you want, and you're done. The main problem with this is that to compile the protocol, the generator would have to check out the workspace at each version, generate, and then combine all the results. But then it would be
+        in the same place as approach 2. One problem though is external protocols: with approach 2, it's easy to import the file you want - each file has a version name. Here, each external protocol file has to be imported from an old state of the external protocol, which is awkward.
+
+        Using git though means that you don't have to copy files manually, or update a version number every time you copy. Unless you mess with git history, you also can't make a bad change: you can do whatever you want to the current vresion, and if you make a backwards-incompatable change,
+        the generator won't be able to generate implicit conversion functions and you'll have to write them yourself. But with the file copying, it's possible to change an old version, which would be bad.
+
+        Git is also nice because it provides hashes, which you can use to refer to protocols instead of versions.
+4. Note about hashing types of variant disptach
+    This really is not needed, and hard to do.
+5. Note on multicast
+    In some cases, you want the server to send the same message, via multicast, to a large number of clients, potentially all with different versions. This is ok only in 1 caes: the message you send is a struct, you only ever add fields, and never change the type of fields once you add them.
+    (This can be proved with the versioning rules above.)
+

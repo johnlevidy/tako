@@ -1,0 +1,184 @@
+1.  Endianness conversions are deleted.
+    Godbolt: https://godbolt.org/z/8M_7Qx
+    Code:
+        #include <endian.h>
+        #include <cstdint>
+
+        class Example {
+        public:
+            uint64_t x() {
+                return le64toh(x_);
+            }
+            void set_x(uint64_t x) {
+                x_ = htole64(x);
+            }
+
+        private:
+            uint64_t x_;
+
+        };
+
+        void foo(Example& ex) {
+            ex.set_x(ex.x() + 1);
+        }
+    Output:
+        foo(Example&):
+            add     QWORD PTR [rdi], 1
+            ret
+2.  GCC knows that consecutive bswaps cancel each other out.
+    Godbolt: https://godbolt.org/z/ExpCxW
+    Code:
+        #include <endian.h>
+        #include <cstdint>
+
+        class Example {
+        public:
+            uint64_t x() {
+                return be64toh(x_);
+            }
+            void set_x(uint64_t x) {
+                x_ = htobe64(x);
+            }
+
+        private:
+            uint64_t x_;
+
+        };
+
+        void foo(Example& ex) {
+            ex.set_x(ex.x() + 1);
+            ex.set_x(ex.x() + 1);
+            ex.set_x(ex.x() + 1);
+            ex.set_x(ex.x() + 1);
+        }
+    Output:
+        foo(Example&):
+            mov     rax, QWORD PTR [rdi]
+            bswap   rax
+            add     rax, 4
+            bswap   rax
+            mov     QWORD PTR [rdi], rax
+            ret
+3.  Using packed structs is basically the same as indexing into a buffer.
+    Godbolt: https://godbolt.org/z/8xoWko
+    Code:
+        #include <cstdint>
+
+        struct Bob {
+            uint32_t x;
+            int64_t y;
+        } __attribute__((packed));
+
+        int64_t do_stuff_1(char const* buf) {
+            const Bob& bob = *reinterpret_cast<const Bob*>(buf);
+            return bob.x + bob.y;
+        }
+
+        int64_t do_stuff_2(char const* buf) {
+            uint32_t x = *reinterpret_cast<const uint32_t*>(buf + 0);
+            int64_t y = *reinterpret_cast<const uint32_t*>(buf + 4);
+            return x + y;
+        }
+
+        int64_t do_stuff_3(char const* buf) {
+            return (*reinterpret_cast<const uint32_t*>(buf + 0)) + (*reinterpret_cast<const uint32_t*>(buf + 4));
+        }
+    Output:
+        do_stuff_1(char const*):
+            mov     eax, DWORD PTR [rdi]
+            add     rax, QWORD PTR [rdi+4]
+            ret
+        do_stuff_2(char const*):
+            mov     eax, DWORD PTR [rdi]
+            mov     edx, DWORD PTR [rdi+4]
+            add     rax, rdx
+            ret
+        do_stuff_3(char const*):
+            mov     eax, DWORD PTR [rdi]
+            add     eax, DWORD PTR [rdi+4]
+            ret
+4.  Memcpy for type punning is the same as a reinterpret_cast (but safe).
+    Godbolt: https://godbolt.org/z/9_ZCUc
+    Code:
+        #include <cstdint>
+        #include <cstring>
+
+        uint32_t unsafe_convert(char const* buf) {
+            return  *reinterpret_cast<const uint32_t*>(buf);
+        }
+
+        uint32_t safe_convert(char const* buf) {
+            uint32_t result;
+            std::memcpy(&result, buf, sizeof(result));
+            return result;
+        }
+    Output:
+        unsafe_convert(char const*):
+                mov     eax, DWORD PTR [rdi]
+                ret
+        safe_convert(char const*):
+                mov     eax, DWORD PTR [rdi]
+                ret
+    See: https://gist.github.com/shafik/848ae25ee209f698763cffee272a58f8
+        What is the Strict Aliasing Rule and Why do we care? (OR Type Punning, Undefined Behavior and Alignment, Oh My!)
+5.  Building a struct, and invoking a build method which copies it field-wise (safely) into a buffer is the same
+    as using memcpy to dump the struct to the buffer, or writing directly to the buffer.
+    Godbolt: https://godbolt.org/z/bUaH7r
+    Code:
+        #include <cstdint>
+        #include <cstring>
+
+        struct Data {
+            uint8_t x1;
+            uint8_t x2;
+            uint8_t x3;
+            uint8_t x4;
+
+            void build(char* buf) {
+                buf[0] = x1;
+                buf[1] = x2;
+                buf[2] = x3;
+                buf[3] = x4;
+            }
+        };
+
+        void build(char* buf) {
+            Data my_data{
+                .x1 = 1,
+                .x2 = 2,
+                .x3 = 3,
+                .x4 = 4,
+            };
+            my_data.build(buf);
+        }
+
+        void memcpy_to_buf(char* buf) {
+            Data my_data{
+                .x1 = 1,
+                .x2 = 2,
+                .x3 = 3,
+                .x4 = 4,
+            };
+
+            std::memcpy(buf, &my_data, sizeof(my_data));
+        }
+
+        void write_into_buf(char* buf) {
+            Data* my_data = reinterpret_cast<Data*>(buf);
+            *my_data = Data{
+                .x1 = 1,
+                .x2 = 2,
+                .x3 = 3,
+                .x4 = 4,
+            };
+        }
+    Output:
+        build(char*):
+            mov     DWORD PTR [rdi], 67305985
+            ret
+        memcpy_to_buf(char*):
+            mov     DWORD PTR [rdi], 67305985
+            ret
+        write_into_buf(char*):
+            mov     DWORD PTR [rdi], 67305985
+            ret

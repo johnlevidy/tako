@@ -1,0 +1,192 @@
+package tako;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+{%- for int_type in int_types %}
+import it.unimi.dsi.fastutil.{{ int_type["jtype"] }}s.{{ int_type["jtype"] | capitalize }}ArrayList;
+{%- endfor %}
+import tako.FixedSizeTakoType;
+
+public class Primitives {
+    {%- for int_type in int_types %}
+    {%- for eshort, ejava in endianness.items() %}
+    {%- set mangled_name = int_type["class"] ~ int_type["size_bytes"] ~ eshort %}
+    {%- set built_array = int_type["jtype"].capitalize() ~ "ArrayList" %}
+    public static class {{ mangled_name }} {
+        public static final int SIZE_BYTES = {{ int_type["size_bytes"] }};
+        public static {{ int_type["jtype"] }} render(ByteBuffer buf, int offset) {
+            buf.order(ByteOrder.{{ ejava }});
+            return buf.get{{ int_type["bb_method_suffix"] }}(offset);
+        }
+        public static int parse(ByteBuffer buf, int offset) throws ParseException {
+            int end = offset + SIZE_BYTES;
+            if (end  > buf.limit()) {
+                throw new ParseException.NotEnoughData();
+            } else {
+                return end;
+            }
+        }
+        public static int serializeInto({{ int_type["jtype"] }} built, ByteBuffer buf, int offset) {
+            buf.order(ByteOrder.{{ ejava }});
+            buf.put{{ int_type["bb_method_suffix"] }}(offset, built);
+            return offset + SIZE_BYTES;
+        }
+        public static class ArrayView {
+            private final int size;
+            private ByteBuffer buf;
+            private int offset;
+            public ArrayView(int size) {
+                this.size = size;
+            }
+            public void reset(ByteBuffer buf, int offset) {
+                this.buf = buf;
+                this.offset = offset;
+            }
+            public int parse() throws ParseException {
+                int end = offsetOfIndex(size);
+                if (end  > buf.limit()) {
+                    throw new ParseException.NotEnoughData();
+                } else {
+                    return end;
+                }
+            }
+            public void build({{ built_array }} out) {
+                out.clear();
+                for (int i = 0; i < size; i++) {
+                    out.add(get(i));
+                }
+            }
+            public {{ int_type["jtype"] }} get(int index) {
+                return Primitives.{{ mangled_name }}.render(buf, offsetOfIndex(index));
+            }
+            public int size() {
+                return size;
+            }
+            private int offsetOfIndex(int index) {
+                return offset + index * {{ int_type["size_bytes"] }};
+            }
+        }
+        public static class ArrayTakoType implements FixedSizeTakoType<ArrayView, {{ built_array }}> {
+            private final int size;
+            public ArrayTakoType(int size) {
+                this.size = size;
+            }
+            public ArrayView newRendered() {
+                return new ArrayView(size);
+            }
+            public {{ built_array }} newBuilt() {
+                {{ built_array }} result = new {{ built_array }}();
+                for (int i = 0; i < size; i++) {
+                    result.add(({{ int_type["jtype"] }}) 0);
+                }
+                return result;
+            }
+            public void render(ArrayView out, ByteBuffer buf, int offset) {
+                out.reset(buf, offset);
+            }
+            public int parse(ArrayView out, ByteBuffer buf, int offset) throws ParseException {
+                out.reset(buf, offset);
+                return out.parse();
+            }
+            public void build({{ built_array }} out, ArrayView rendered) {
+                rendered.build(out);
+            }
+            public int serializeInto({{ built_array }} built, ByteBuffer buf, int offset) {
+                if (built.size() != size) {
+                    throw new WrongArraySizeException();
+                }
+                for (int i = 0; i < built.size(); i++) {
+                    offset = Primitives.{{ mangled_name }}.serializeInto(built.get{{ int_type["jtype"] | capitalize }}(i), buf, offset);
+                }
+                return offset;
+            }
+            public int sizeBytes({{ built_array }} built) {
+                return sizeBytes();
+            }
+            public int sizeBytes() {
+                return size * {{ int_type["size_bytes"] }};
+            }
+            public void cloneInto({{ built_array }} out, {{ built_array }} src) {
+                for (int i = 0; i < size; i++) {
+                    out.set(i, src.get{{ int_type["jtype"] | capitalize }}(i));
+                }
+            }
+        }
+        public static class VectorView {
+            private ByteBuffer buf;
+            private int offset;
+            private int size;
+            public void reset(ByteBuffer buf, int offset, int size) {
+                this.buf = buf;
+                this.offset = offset;
+                this.size = size;
+            }
+            public int parse() throws ParseException {
+                int end = offsetOfIndex(size);
+                if (end  > buf.limit()) {
+                    throw new ParseException.NotEnoughData();
+                } else {
+                    return end;
+                }
+            }
+            public void build({{ int_type["jtype"] | capitalize }}ArrayList out) {
+                out.clear();
+                for (int i = 0; i < size; i++) {
+                    out.add(get(i));
+                }
+            }
+            public {{ int_type["jtype"] }} get(int index) {
+                return Primitives.{{ mangled_name }}.render(buf, offsetOfIndex(index));
+            }
+            public int size() {
+                return size;
+            }
+            private int offsetOfIndex(int index) {
+                return offset + index * {{ int_type["size_bytes"] }};
+            }
+        }
+        public static class VectorTakoType implements TakoType<VectorView, {{ built_array }}> {
+            public VectorView newRendered() {
+                return new VectorView();
+            }
+            public {{ built_array }} newBuilt() {
+                return new {{ built_array }}();
+            }
+            public void render(VectorView out, ByteBuffer buf, int offset, int size) {
+                out.reset(buf, offset, size);
+            }
+            public int parse(VectorView out, ByteBuffer buf, int offset, int size) throws ParseException {
+                out.reset(buf, offset, size);
+                return out.parse();
+            }
+            public void build({{ built_array }} out, VectorView rendered) {
+                rendered.build(out);
+            }
+
+            public int serializeInto({{ built_array }} built, ByteBuffer buf, int offset) {
+                for (int i = 0; i < built.size(); i++) {
+                    offset = Primitives.{{ mangled_name }}.serializeInto(built.get{{ int_type["jtype"] | capitalize }}(i), buf, offset);
+                }
+                return offset;
+            }
+
+            public int sizeBytes({{ built_array }} built) {
+                return built.size() * {{ int_type["size_bytes"] }};
+            }
+            public void cloneInto({{ built_array }} out, {{ built_array }} src) {
+                out.ensureCapacity(src.size());
+                for (int i = src.size(); i < out.size(); i++) {
+                    out.add(({{ int_type["jtype"] }}) 0);
+                }
+                while (out.size() > src.size()) {
+                    out.remove{{ int_type["jtype"] | capitalize }}(out.size() - 1);
+                }
+                for (int i = 0; i < src.size(); i++) {
+                    out.set(i, src.get{{ int_type["jtype"] | capitalize }}(i));
+                }
+            }
+        }
+    }
+    {%- endfor %}
+    {%- endfor %}
+}
