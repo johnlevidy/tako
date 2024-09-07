@@ -41,7 +41,7 @@ Some type `P` is a substitute for a type `N` (`P << N`), where both `P` and `N` 
     *   For all `0 <= i < Count(P)`, `P[i].name == N[i].name` and `P[i].type << N[i].type`.
 3.  Variant: the following conditions must hold:
     *   `Name(P) == Name(N)`
-    *   For each tag `t` in `Tags(P)`, `t` must be in `Tags(A)` and `A[t] << B[t]`
+    *   For each tag `t` in `Tags(P)`, `t` must be in `Tags(N)` and `N[t] << P[t]`
 
 Note there may be more cases where 'P << N':
 *   Someone changed the name of a struct or variant, but made no other change
@@ -50,7 +50,7 @@ Note there may be more cases where 'P << N':
 
 # Compatibility Requirements
 
-Some type `P` is a compatible with a type `N` (`P << N`), where both `P` and `N` are the same type-class, in the following cases:
+Some type `P` is a compatible with a type `N` (`P < N`), where both `P` and `N` are the same type-class, in the following cases:
 1.  Integer: always
 2.  Struct: the following conditions must hold:
     *   `Name(P) == Name(N)`
@@ -59,7 +59,7 @@ Some type `P` is a compatible with a type `N` (`P << N`), where both `P` and `N`
     *   For `i = Count(N) - 1`, `P[i].name == N[i].name` and `P[i].type < N[i].type`.
 3.  Variant: the following conditions must hold:
     *   `Name(P) == Name(N)`
-    *   For each tag `t` in `Tags(P)`, `t` must be in `Tags(A)` and `A[t] < B[t]`
+    *   For each tag `t` in `Tags(P)`, `t` must be in `Tags(N)` and `N[t] < P[t]`
 
 # Examples
 
