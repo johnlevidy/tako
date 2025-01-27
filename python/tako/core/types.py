@@ -222,8 +222,10 @@ class StructDef(RootType):
         # Prevents infinite recursion on deepcopy
         if name == "__setstate__" or name not in self.fields:
             raise AttributeError(name)
-        else:
+        elif isinstance(self.fields[name], EnumDef):
             return FieldReference(name, self)
+        else:
+            return self.fields[name]
 
     def accept(self, visitor: TypeVisitor[T]) -> T:
         return visitor.visit_struct_def(self)
@@ -243,6 +245,11 @@ def Struct(**kwargs: Type) -> StructDef:  # noqa N802
 class VariantDef(RootType):
     tag_type: Int
     variants: t.Dict[StructDef, int]
+
+    def __getitem__(self, match_struct_def: StructDef) -> Optional[T]:
+        if match_struct_def in self.variants:
+            return match_struct_def
+        return None
 
     def accept(self, visitor: TypeVisitor[T]) -> T:
         return visitor.visit_variant_def(self)
@@ -268,6 +275,14 @@ Variant = VariantHelper()
 class HashVariantDef(RootType):
     tag_type: Int
     hash_types: t.List[StructDef]
+
+    def __getitem__(self, match_struct_def: StructDef) -> Optional[T]:
+        for h in self.hash_types:
+            # TODO: is this totally safe? same name + all same fields.
+            # probably need a proper struct definition equality check?
+            if match_struct_def is h:
+                return h
+        return None
 
     def accept(self, visitor: TypeVisitor[T]) -> T:
         return visitor.visit_hash_variant_def(self)

@@ -26,7 +26,6 @@ class Digest:
     repr_str: str
     repr_hash: str
 
-
 def run(
     types: t.Dict[QName, mir.RootType], type_order: t.List[QName]
 ) -> t.Union[t.Dict[QName, Digest], t.List[Error]]:
