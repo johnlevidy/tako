@@ -18,7 +18,9 @@ This includes:
 - Struct
 - Variant
 - HashVariant
+
 Regular Types include:
+
 - int
 - float
 - seq
