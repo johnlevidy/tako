@@ -25,7 +25,6 @@ from tako.util.cast import checked_cast
 def lower(types: t.Dict[QName, pt.RootType]) -> t.Dict[QName, mir.RootType]:
     return {name: type_.accept_rtv(RootLower()) for name, type_ in types.items()}
 
-
 @dataclasses.dataclass
 class RootLower(pt.RootTypeVisitor[mir.RootType]):
     def visit_enum_def(self, type_: pt.EnumDef) -> mir.RootType:
@@ -36,6 +35,7 @@ class RootLower(pt.RootTypeVisitor[mir.RootType]):
         )
 
     def visit_struct_def(self, type_: pt.StructDef) -> mir.RootType:
+        # TODO I'm kind of surprised this comprehension works correctly since type_ is overloaded
         return mir.Struct(
             type_.qualified_name(),
             {name: type_.accept(Lower()) for name, type_ in type_.fields.items()},

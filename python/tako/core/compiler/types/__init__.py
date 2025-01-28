@@ -16,6 +16,7 @@ import typing as t
 import tako.core.types as pt
 from tako.core.compiler.types import (
     lower,
+    protocol_graph,
     definition_order,
     check_stuff,
     variant_expand,
@@ -37,6 +38,11 @@ from tako.util.qname import QName
 def compile(
     proto_name: QName, types: t.Dict[QName, pt.RootType], type_order: t.List[QName]
 ) -> t.Union[t.List[Error], lir.ProtocolTypes]:
+    g = protocol_graph.build(types)
+    for gm in g:
+        sep = '\n\t'
+        print(f"{str(gm.value.qualified_name())} has children: {sep.join(['', *[str(c.value.qualified_name())  if isinstance(c.value, pt.RootType) else str(c.value) for c in gm.children]])}")
+        print(gm.value.name)
     lowered = lower.lower(types)
 
     checks = [definition_order.run, check_stuff.run, variant_expand.run, seq_expand.run]
