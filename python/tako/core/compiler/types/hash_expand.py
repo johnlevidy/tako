@@ -16,7 +16,7 @@ import typing as t
 import dataclasses
 from tako.core.compiler.types import mir
 from tako.core.error import Error
-from tako.core.repr_str import ReprStr, ShallowReprStr
+from tako.core.repr_str import ShallowReprStr
 from tako.util.qname import QName
 import hashlib
 
@@ -63,19 +63,15 @@ class HashExpand(
         x = rt.accept(ShallowReprStr(self.types))
         return Digest(repr_str=x, repr_hash=sha256hex(x))
 
-    def digest(self, rt: mir.RootType) -> Digest:
-        x = rt.accept(ReprStr(self.types))
-        return Digest(repr_str=x, repr_hash=sha256hex(x))
-
     def visit_struct(self, root: mir.Struct) -> t.Union[HashExpandResult, Error]:
-        return HashExpandResult(self.digest(root), None)
+        return HashExpandResult(self.shallow_digest(root), None)
 
     def visit_variant(self, root: mir.Variant) -> t.Union[HashExpandResult, Error]:
         fixed = root.accept_v(self)
         if isinstance(fixed, Error):
             return fixed
         else:
-            return HashExpandResult(self.digest(fixed), fixed)
+            return HashExpandResult(self.shallow_digest(fixed), fixed)
 
     def visit_fixed_variant(
         self, variant: mir.FixedVariant
@@ -103,4 +99,4 @@ class HashExpand(
         return mir.FixedVariant(variant.name, variant.tag_type, tag_map)
 
     def visit_enum(self, root: mir.Enum) -> t.Union[HashExpandResult, Error]:
-        return HashExpandResult(self.digest(root), None)
+        return HashExpandResult(self.shallow_digest(root), None)
