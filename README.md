@@ -26,3 +26,13 @@ Regular Types include:
 - seq
 - detached_variant ( not totally sure why )
 - virtual
+
+## Basic Flow ( could be issues, this is an evolving code archaeology )
+| Step | Description | Key Files|
+|----------|----------|----------|
+| Main | Primary entrypoint via main. Very little code is run before dispatching to compiler. | main.py |
+| Ingest / Parsing | Code related to sanity and type checking, making sure root types are respected. The compile_proto function walks through the process of steadily lowering IRs down to the final SIR ( which is just a structification of the LIR ). It does this independently for types, constants, and conversions. In below cells we'll only discuss types, as that's the most complex case, but others follow a similar pattern. | ```compiler/__init__.py::compile_proto``` in compile.py and subsequently ```ingest.py::run``` |
+| MIR Construction from Ingest | Take the inputs which are still in a fairly raw format and lower them to MIR through lower.py. |  ```types/__init__.py::compile``` ```lower.py``` |
+| LIR Construction from MIR | Series of expansions happen, for example, variants are turned into a determinant tag and a payload. This is all proeparatory work for fuse.py, which ultimately lowers us down to lir properly. | ```fuse.py``` ```lir.py``` |
+
+
