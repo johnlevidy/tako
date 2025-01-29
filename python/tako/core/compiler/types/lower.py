@@ -60,7 +60,7 @@ class RootLower(pt.RootTypeVisitor[mir.RootType]):
                     checked_cast(mir.StructRef, struct.accept(Lower()))
                     for struct in type_.hash_types
                 ]
-            ),
+            ), type_.skippabe
         )
 
 

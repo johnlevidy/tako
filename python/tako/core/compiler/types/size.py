@@ -63,6 +63,8 @@ class RootSizeCalculator(mir.RootTypeVisitor[RootSizeResult]):
 
     def visit_variant(self, root: mir.Variant) -> RootSizeResult:
         target_size: t.Optional[st.Constant] = None
+        # if isinstance(root, mir.FixedVariant) and root.skippable:
+        #     return RootSizeResult(st.Dynamic(), None)
         for sr in root.types():
             size = self.size_map[sr.name].size
             if not isinstance(size, st.Constant):

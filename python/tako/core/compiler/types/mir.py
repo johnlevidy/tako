@@ -83,6 +83,7 @@ class VariantVisitor(abc.ABC, t.Generic[T]):
 @dataclasses.dataclass(frozen=True)
 class FixedVariant(Variant):
     tags: t.Dict[StructRef, int]
+    skippable: bool
 
     def types(self) -> t.Iterable[StructRef]:
         return self.tags.keys()
@@ -94,6 +95,7 @@ class FixedVariant(Variant):
 @dataclasses.dataclass(frozen=True)
 class HashVariant(Variant):
     hash_types: t.Set[StructRef]
+    skippabe: bool
 
     def types(self) -> t.Iterable[StructRef]:
         return self.hash_types

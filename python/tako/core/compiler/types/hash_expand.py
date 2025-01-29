@@ -96,7 +96,7 @@ class HashExpand(
             tag_map[type_] = short
             inv_tag_map[short] = type_
 
-        return mir.FixedVariant(variant.name, variant.tag_type, tag_map)
+        return mir.FixedVariant(variant.name, variant.tag_type, tag_map, variant.skippable)
 
     def visit_enum(self, root: mir.Enum) -> t.Union[HashExpandResult, Error]:
         return HashExpandResult(self.shallow_digest(root), None)
