@@ -105,6 +105,7 @@ class RootTypeLsir(tir.RootTypeVisitor[t.Dict[str, t.Any]]):
             root,
             {
                 "tag_type": root.tag_type.accept(TypeLsir()),
+                "len_type": root.len_type.accept(TypeLsir()) if root.len_type else None,
                 "variants": {
                     f"{struct.name}": value for struct, value in root.tags.items()
                 },

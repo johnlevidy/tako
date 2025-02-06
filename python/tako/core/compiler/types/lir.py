@@ -147,6 +147,7 @@ KeyProperty = master_fields.KeyProperty
 @dataclasses.dataclass(frozen=True)
 class Variant(RootType):
     tag_type: Int
+    len_type: Optional[Int]
     tags: t.Dict[Struct, int] = dataclasses.field(compare=False)
 
     def accept_rtv(self, visitor: RootTypeVisitor[T]) -> T:
