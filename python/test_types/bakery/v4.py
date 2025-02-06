@@ -27,9 +27,11 @@ class V4(Protocol):
         # Frosting flavor is actually the most important
         # I can't believe I forgot it
         frosting_flavor=Flavor,
+        # Forgot about the number of sprinkles
+        # sprinkle_quantity=li32,
     )
     CakeOrder = Struct(layers=li32, shape=Shape, flavor=Flavor)
-    Order = Variant[u8]({CupcakeOrder: 0, CakeOrder: 1})
+    Order = HashVariant[u8]([ CupcakeOrder, CakeOrder])
 
     ErrorResponse = Struct()
     NewOrderRequest = Struct(name_len=u8, name=Seq(i8, this.name_len), order=Order)
@@ -47,14 +49,3 @@ class V4(Protocol):
         }
     )
     Message = Struct(msg=MessageVariant)
-
-    conversions = [
-        ConversionsFromPrior(
-            Prior,
-            VariantConversion(
-                src=MessageVariant,
-                target=Prior.MessageVariant,
-                mapping={CancelOrderRequest: None, CancelOrderResponse: None},
-            ),
-        )
-    ]

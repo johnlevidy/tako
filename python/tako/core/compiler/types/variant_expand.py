@@ -34,11 +34,17 @@ class VariantExpand(mir.RootTypeVisitor[t.Optional[mir.Struct]]):
     def visit_struct(self, root: mir.Struct) -> t.Optional[mir.Struct]:
         new_fields: t.Dict[str, mir.Type] = {}
         for fname, ftype in root.fields.items():
-            if isinstance(ftype, mir.VariantRef):
+            if isinstance(ftype, mir.HashVariantRef):
                 new_fname = f"{fname}_injected_key_"
                 new_fields[new_fname] = ftype.resolve(self.types).tag_type
                 new_fields[fname] = mir.DetachedVariant(
-                    variant=ftype, tag=mir.FieldReference(new_fname)
+                    variant=ftype, tag=mir.FieldReference(new_fname), is_hash_tag = True
+                    )
+            elif isinstance(ftype, mir.VariantRef):
+                new_fname = f"{fname}_injected_key_"
+                new_fields[new_fname] = ftype.resolve(self.types).tag_type
+                new_fields[fname] = mir.DetachedVariant(
+                    variant=ftype, tag=mir.FieldReference(new_fname), is_hash_tag = False
                 )
             else:
                 new_fields[fname] = ftype

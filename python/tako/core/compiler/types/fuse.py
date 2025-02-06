@@ -100,6 +100,7 @@ class FuseRootType(
             trivial=self.tmap[variant.name],
             name=variant.name,
             digest=self.digest_map[variant.name],
+            len_type=checked_cast(lir.Int, variant.len_type.accept(self)) if variant.len_type else None,
             tag_type=checked_cast(lir.Int, variant.tag_type.accept(self)),
             tags={
                 checked_cast(lir.Struct, sr.accept(self)): value

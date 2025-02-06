@@ -63,8 +63,13 @@ class RootSizeCalculator(mir.RootTypeVisitor[RootSizeResult]):
 
     def visit_variant(self, root: mir.Variant) -> RootSizeResult:
         target_size: t.Optional[st.Constant] = None
+        # Mark
+        if isinstance(root, mir.FixedVariant) and root.len_type:
+            print(f"Detected variant with embedded length: {root.name}")
+            return RootSizeResult(st.Dynamic(), None)
         for sr in root.types():
             size = self.size_map[sr.name].size
+            print(f"Contained size of {root.name} member {sr.name} is {size}")
             if not isinstance(size, st.Constant):
                 return RootSizeResult(st.Dynamic(), None)
             if target_size is None:

@@ -45,6 +45,11 @@ def compile(
         if errors:
             return errors
 
+    # Builds up a map from master to slave fields. This is the sort of reverse
+    # action that takes place during parsing. At parse time, a Seq's length is first
+    # read, then the sequence length is known. At build time, the Seq is built first
+    # and the previous field is later populated. This master_field_map seems focused
+    # on the "builder" problem
     master_field_map = master_fields.run(lowered, type_order)
     if isinstance(master_field_map, list):
         return master_field_map

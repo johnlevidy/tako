@@ -38,6 +38,7 @@ def compile_proto(
     if isinstance(comp_constants, list):
         return comp_constants
 
+    # Q: Are conversions affected by skippable hash variants in any meaningful way?
     comp_conversions = conversions.compile(
         proto.name, proto.conversions, comp_types.types
     )

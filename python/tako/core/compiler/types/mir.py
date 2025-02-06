@@ -83,6 +83,7 @@ class VariantVisitor(abc.ABC, t.Generic[T]):
 @dataclasses.dataclass(frozen=True)
 class FixedVariant(Variant):
     tags: t.Dict[StructRef, int]
+    len_type: t.Optional[Int]
 
     def types(self) -> t.Iterable[StructRef]:
         return self.tags.keys()
@@ -94,6 +95,7 @@ class FixedVariant(Variant):
 @dataclasses.dataclass(frozen=True)
 class HashVariant(Variant):
     hash_types: t.Set[StructRef]
+    len_type: t.Optional[Int]
 
     def types(self) -> t.Iterable[StructRef]:
         return self.hash_types
@@ -280,10 +282,10 @@ class VariableLength(Length):
 class DetachedVariant(Type):
     variant: VariantRef
     tag: FieldReference
+    is_hash_tag: bool
 
     def accept(self, visitor: TypeVisitor[T]) -> T:
         return visitor.visit_detached_variant(self)
-
 
 @dataclasses.dataclass(frozen=True)
 class Virtual(Type):
@@ -336,6 +338,15 @@ class VariantRef(Ref):
         return checked_cast(Variant, context[self.name])
 
     def accept_r(self, visitor: RefVisitor[T]) -> T:
+        return visitor.visit_variant_ref(self)
+
+@dataclasses.dataclass(frozen=True)
+class HashVariantRef(VariantRef):
+    def resolve(self, context: t.Dict[QName, RootType]) -> Variant:
+        return checked_cast(Variant, context[self.name])
+
+    def accept_r(self, visitor: RefVisitor[T]) -> T:
+        # TODO clean up this type warning
         return visitor.visit_variant_ref(self)
 
 

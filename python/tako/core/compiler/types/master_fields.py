@@ -28,7 +28,6 @@ class MasterField:
     master_field: str
     key_property: KeyProperty
 
-
 @dataclasses.dataclass(frozen=True)
 class DeterminedField:
     determined_field: str
@@ -79,7 +78,7 @@ class MasterFields(mir.RootTypeVisitor[t.Union[Error, t.Dict[str, MasterField], 
 
 # Map from a field A to a field B where the value of A (slave field) is determined by the the value
 # of field B (master field).
-# For example, if a struct has these fields: {"len": li32, "data", Seq(li32, this.len)},
+# For example, if a struct has these fields: {"len": li32, "data": Seq(li32, this.len)},
 # then this function would return {"len": "data"} because the value of len is determined
 # by the value in data.
 # This is needed for generating builders: should a given field be included in the generated

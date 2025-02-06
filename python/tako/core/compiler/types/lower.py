@@ -49,18 +49,23 @@ class RootLower(pt.RootTypeVisitor[mir.RootType]):
                 checked_cast(mir.StructRef, struct.accept(Lower())): value
                 for struct, value in type_.variants.items()
             },
+            False
         )
 
     def visit_hash_variant_def(self, type_: pt.HashVariantDef) -> mir.RootType:
+        # Cast to the mir int types
+        mir_tag_type = checked_cast(mir.Int, type_.tag_type.accept(Lower()))
+        mir_len_type = checked_cast(mir.Int, type_.len_type.accept(Lower())) if type_.len_type else None
         return mir.HashVariant(
             type_.qualified_name(),
-            checked_cast(mir.Int, type_.tag_type.accept(Lower())),
+            mir_tag_type,
             set(
                 [
                     checked_cast(mir.StructRef, struct.accept(Lower()))
                     for struct in type_.hash_types
                 ]
             ),
+            mir_len_type
         )
 
 
@@ -88,6 +93,7 @@ class Lower(pt.TypeVisitor[mir.Type]):
         return mir.DetachedVariant(
             mir.VariantRef(type_.variant.qualified_name()),
             mir.FieldReference(type_.tag.name),
+            False
         )
 
     def visit_virtual(self, type_: pt.Virtual) -> mir.Type:
@@ -103,4 +109,4 @@ class Lower(pt.TypeVisitor[mir.Type]):
         return mir.VariantRef(type_.qualified_name())
 
     def visit_hash_variant_def(self, type_: pt.HashVariantDef) -> mir.Type:
-        return mir.VariantRef(type_.qualified_name())
+        return mir.HashVariantRef(type_.qualified_name())

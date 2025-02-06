@@ -23,7 +23,6 @@ tir = types.lir
 kir = constants.lir
 cir = conversions.lir
 
-
 @dataclasses.dataclass(frozen=True)
 class Protocol:
     name: QName

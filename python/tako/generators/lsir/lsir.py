@@ -46,6 +46,7 @@ class LsirGenerator(Generator):
         with (out_dir / Path(str(proto.name) + ".json")).open("w") as out:
             json.dump(dform, out, indent=4)
 
+    # TODO this should produce a real value
     def list_outputs(
         self, proto_qname: QName, args: t.Any
     ) -> t.Generator[Path, None, None]:
@@ -104,6 +105,7 @@ class RootTypeLsir(tir.RootTypeVisitor[t.Dict[str, t.Any]]):
             root,
             {
                 "tag_type": root.tag_type.accept(TypeLsir()),
+                "len_type": root.len_type.accept(TypeLsir()) if root.len_type else None,
                 "variants": {
                     f"{struct.name}": value for struct, value in root.tags.items()
                 },
