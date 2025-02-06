@@ -58,7 +58,7 @@ class HashExpand(
     mir.VariantVisitor[t.Union[mir.FixedVariant, Error]],
 ):
     types: t.Dict[QName, mir.RootType]
-
+    
     def shallow_digest(self, rt: mir.RootType) -> Digest:
         x = rt.accept(ShallowReprStr(self.types))
         return Digest(repr_str=x, repr_hash=sha256hex(x))
@@ -96,7 +96,7 @@ class HashExpand(
             tag_map[type_] = short
             inv_tag_map[short] = type_
 
-        return mir.FixedVariant(variant.name, variant.tag_type, tag_map, variant.skippable)
+        return mir.FixedVariant(variant.name, variant.tag_type, tag_map, variant.len_type)
 
     def visit_enum(self, root: mir.Enum) -> t.Union[HashExpandResult, Error]:
         return HashExpandResult(self.shallow_digest(root), None)

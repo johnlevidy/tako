@@ -8,7 +8,8 @@ class Organism(Protocol):
 
     Phylum = HashVariant[li32]([Chordata])
     Animalia = Struct(motility_type=i8, phylum=Phylum)
-    Plantae = Struct(seed_count=li32)
+    # Attempt to make a dynamic length member of a hash variant, does it embed the length somehow?
+    Plantae = Struct(seed_count=li32, seeds = Seq(i8, this.seed_count))
 
-    Kingdom = HashVariant[li32]([Animalia, Plantae])
+    Kingdom = SkippableHashVariant[li32, u8]([Animalia, Plantae])
     Organism = Struct(kingdom=Kingdom)

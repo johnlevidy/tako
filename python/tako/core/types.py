@@ -268,7 +268,7 @@ Variant = VariantHelper()
 class HashVariantDef(RootType):
     tag_type: Int
     hash_types: t.List[StructDef]
-    skippabe: bool
+    len_type: t.Optional[Int]
 
     def accept(self, visitor: TypeVisitor[T]) -> T:
         return visitor.visit_hash_variant_def(self)
@@ -277,21 +277,26 @@ class HashVariantDef(RootType):
         return visitor.visit_hash_variant_def(self)
 
 class HashVariantHelper:
-    skippable = False
-    def __init__(self, skippable=False):
-        self.skippable = skippable
-
     def __getitem__(
         self, tag_type: Int
     ) -> t.Callable[[t.List[StructDef]], HashVariantDef]:
         def make_hash_variant(hash_types: t.List[StructDef]) -> HashVariantDef:
-            return HashVariantDef(tag_type, hash_types, self.skippable)
+            return HashVariantDef(tag_type, hash_types, None)
+
+        return make_hash_variant
+
+class SkippableHashVariantHelper:
+    def __getitem__(
+            self, tag_len_type: t.Tuple[Int, ...]
+    ) -> t.Callable[[t.List[StructDef]], HashVariantDef]:
+        def make_hash_variant(hash_types: t.List[StructDef]) -> HashVariantDef:
+            return HashVariantDef(tag_len_type[0], hash_types, tag_len_type[1])
 
         return make_hash_variant
 
 
 HashVariant = HashVariantHelper()
-SkippableHashVariant = HashVariantHelper(True)
+SkippableHashVariant = SkippableHashVariantHelper()
 
 @dataclasses.dataclass(eq=False)
 class Seq(Type):
