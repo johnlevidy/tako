@@ -1,0 +1,31 @@
+[](const ::test_types::bakery::v4::Message&) { return static_cast<::std::uint32_t>(UINT32_C(2458638600)); }
+
+This is the hash of a v4 message, which inside has a hash variant. Hopefully it changes when i add to the inner HV
+
+[](const ::test_types::bakery::v4::Message&) { return static_cast<::std::uint32_t>(UINT32_C(3267984003)); }
+
+Indeed it does.
+
+I made ShallowReprHash. This might not be the most efficient way to do it but initially I just want to see it preserve the hashes
+
+[](const ::test_types::bakery::v4::Message&) { return static_cast<::std::uint32_t>(UINT32_C(2458638600)); }
+
+Seems like it's back to the old hash when I remove the new sprinkle_quantity from the cupcakeorder, great.
+
+Ok that was more work than expected, but before:
+
+  5             [](const ::test_types::bakery::v4::Message&) { return static_cast<::std::uint32_t>(UINT32_C(390615788)); }
+
+after changing a field on a struct only present in an HV
+  5             [](const ::test_types::bakery::v4::Message&) { return static_cast<::std::uint32_t>(UINT32_C(390615788)); }
+
+after changing a field on a struct elsewhere in v4
+::std::uint32_t tag() const {                                                                                                                                
+  1         return match(
+  2             [](const ::test_types::bakery::v2::Message&) { return static_cast<::std::uint32_t>(UINT32_C(3831964682)); },
+  3             [](const ::test_types::bakery::v1::Message&) { return static_cast<::std::uint32_t>(UINT32_C(2782154402)); },
+  4             [](const ::test_types::bakery::v3::Message&) { return static_cast<::std::uint32_t>(UINT32_C(716972100)); },
+  5             [](const ::test_types::bakery::v4::Message&) { return static_cast<::std::uint32_t>(UINT32_C(1691428639)); }
+  6         );
+
+after changing a field on a struct elsewhere in v2

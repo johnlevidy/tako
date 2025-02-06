@@ -88,6 +88,7 @@ class Lower(pt.TypeVisitor[mir.Type]):
         return mir.DetachedVariant(
             mir.VariantRef(type_.variant.qualified_name()),
             mir.FieldReference(type_.tag.name),
+            False
         )
 
     def visit_virtual(self, type_: pt.Virtual) -> mir.Type:
@@ -103,4 +104,4 @@ class Lower(pt.TypeVisitor[mir.Type]):
         return mir.VariantRef(type_.qualified_name())
 
     def visit_hash_variant_def(self, type_: pt.HashVariantDef) -> mir.Type:
-        return mir.VariantRef(type_.qualified_name())
+        return mir.HashVariantRef(type_.qualified_name())
