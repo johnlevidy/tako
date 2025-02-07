@@ -37,6 +37,7 @@ from tako.generators.cpp.types import (  # noqa
     relative_path,
     wrap_in_namespace,
     protocol_namespace,
+    PeekCppType,
     ViewCppType,
     OwnedCppType,
     cint_type,
@@ -125,7 +126,7 @@ class RootConstantGenerator(kir.RootConstantVisitor[cg.Node]):
 @dataclasses.dataclass
 class RootTypeGenerator(tir.RootTypeVisitor[cg.Node]):
     def visit_struct(self, root: tir.Struct) -> cg.Node:
-        return cg.Section([gen_owned_class(root), gen_view_class(root)])
+        return cg.Section([gen_owned_class(root), gen_view_class(root), gen_peek_class(root)])
 
     def visit_variant(self, root: tir.Variant) -> cg.Node:
         return cg.Section([gen_owned_variant(root), gen_view_variant(root)])
@@ -248,6 +249,91 @@ class StructSizer(st.SizeVisitor[ClassParts]):
             )
         )
 
+
+def gen_peek_class(struct: tir.Struct) -> cg.Node:
+    class_name = PeekCppType.get_local_struct(struct)
+    owned_type = OwnedCppType.get_local_struct(struct)
+    builder = ClassBuilder()
+
+    if isinstance(struct.size, st.Constant):
+        builder.public.append(
+            cg.Raw(f"static constexpr size_t SIZE_BYTES = {struct.size.value};")
+        )
+
+    builder_info = [
+        (fname, field.type_.accept(ViewCppType()))
+        for fname, field in struct.get_owned()
+    ]
+    builder.public.append(
+        gen_raw(
+            """\
+            using Rendered = {{ class_name }};
+            using Built = {{ owned_type }};
+            static Built build(const Rendered& rendered) {
+                return Built {
+                {%- for fname, fctype in builder_info %}
+                    .{{ fname }} = {{ fctype }}::build(rendered.{{ fname }}()),
+                {%- endfor %}
+                };
+            }
+            Built build() const {
+                return build(*this);
+            }""",
+            locals(),
+        )
+    )
+    builder.public.append(gen_render(struct))
+    builder.public.append(gen_parse(struct))
+    builder.public.append(
+        gen_raw(
+            """\
+            static gsl::span<gsl::byte> serialize_into(const Built& built, gsl::span<gsl::byte> buf) {
+                return built.serialize_into(buf);
+            }
+            static size_t size_bytes(const Built& built) {
+                return built.size_bytes();
+            }""",
+            locals(),
+        )
+    )
+    builder.public += [
+        gen_raw_getter(fname, field) for fname, field in struct.get_non_virtual()
+    ]
+    # Virtual fields get getters, but not raw getters.
+    builder.public += [
+        gen_getter(fname, field) for fname, field in struct.fields.items()
+    ]
+    builder.public.append(
+        gen_raw(
+            """\
+            ::gsl::span<const ::gsl::byte> backing_buffer() const {
+                return _buf;
+            }""",
+            locals(),
+        )
+    )
+
+    member_info = [("_buf", "::gsl::span<const ::gsl::byte>")] + [
+        (f"_info_{fname}", f"::tako::ParseInfo<{field.type_.accept(ViewCppType())}>")
+        for fname, field in struct.get_non_virtual_dynamic()
+    ]
+    builder.private += [
+        gen_raw(
+            """\
+            explicit {{ class_name }}({%- for name, ctype in member_info -%}
+                {{ ctype }} _cons{{ name }}{{ ", " if not loop.last }}
+                {%- endfor -%}) :
+            {%- for name, _ in member_info -%}
+                {{ name }}{ _cons{{ name }} }{{ "," if not loop.last }}
+            {%- endfor -%} {}
+            {%- for name, ctype in member_info%}
+            {{ ctype }} {{ name }};
+            {%- endfor %}""",
+            locals(),
+        )
+    ]
+
+    return cg.Class(name=class_name, bases=[], sections=builder.finalize())
 
 def gen_view_class(struct: tir.Struct) -> cg.Node:
     class_name = ViewCppType.get_local_struct(struct)
@@ -595,6 +681,7 @@ def gen_owned_variant(root: tir.Variant) -> cg.Node:
 
 def gen_view_variant(root: tir.Variant) -> cg.Node:
     view_class_name = ViewCppType.get_local_variant(root)
+    print(f"Generating for: {view_class_name}")
     owned_ctype = root.accept(OwnedCppType())
     tag_ctype = root.tag_type.accept(OwnedCppType())
     variants = [
