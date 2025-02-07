@@ -1,5 +1,6 @@
 #include <gsl.hpp>
-#include "core.hh"
+#include <iostream>
+#include <core.hh>
 #include <cstddef>
 #include <vector>
 
@@ -13,5 +14,10 @@ int main() {
     .three = 6
   };
   std::vector<gsl::byte> request_bytes = request.serialize();
+  std::cout << "Hello\n";
 
+  test_types::milestone1::PacketView view = test_types::milestone1::PacketView::render(request_bytes);
+  std::cout << view.one() << "\n";
+  std::cout << view.three() << "\n";
+  // parsed.
 }
