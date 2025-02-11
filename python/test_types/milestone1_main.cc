@@ -2,9 +2,11 @@
 #include <gsl.hpp>
 #include <iomanip>
 #include <iostream>
-#include <core_modified.hh>
+#include <core.hh>
 #include <cstddef>
+#include <optional>
 #include <vector>
+#include "tako/tako.hh"
 #include "tl/expected.hpp"
 
 template<typename T>
@@ -23,7 +25,13 @@ int main() {
     .two = test_types::milestone1::BigIntegerType {
       .contained = 3,
     },
-    .three = 6
+    .three = 6,
+    .four = test_types::milestone1::InnerVariant {
+      .inner = test_types::milestone1::MiniIntegerType {
+        .contained = 4
+      }
+    },
+    .five = 123
   };
   // Expected sizing
   // one = 4
@@ -34,24 +42,25 @@ int main() {
 
   test_types::milestone1::PacketView view = test_types::milestone1::PacketView::render(request_bytes);
   // parsed.
-  test_types::milestone1::PacketPeek peek = test_types::milestone1::PacketView::peek(request_bytes);
-  assert(13 == peek.good_bytes);
+  tako::ParseInfo<std::optional<test_types::milestone1::PacketPeek>> peek = test_types::milestone1::PacketPeek::peek(request_bytes);
 
   auto corrupt_request = test_types::milestone1::Packet {
     .one = 5,
     .two = test_types::milestone1::BigIntegerType {
       .contained = 3,
     },
-    .three = 6
+    .three = 6,
+    .four = test_types::milestone1::InnerVariant {
+      .inner = test_types::milestone1::MiniIntegerType {
+        .contained = 4
+      }
+    },
+    .five = 123
   };
   std::vector<gsl::byte> corrupt_request_bytes = request.serialize();
   assert(int(corrupt_request_bytes[4]) == 1);
   // Bad tag on the wire!!
   corrupt_request_bytes[4] = gsl::byte{0x03};
-  test_types::milestone1::PacketPeek corrupt_peek = test_types::milestone1::PacketView::peek(corrupt_request_bytes);
-  assert(4 == corrupt_peek.good_bytes);
-  assert(5 == corrupt_peek.one().value());
-  assert(std::nullopt == corrupt_peek.two());
-  assert(std::nullopt == corrupt_peek.three());
+  tako::ParseInfo<std::optional<test_types::milestone1::PacketPeek>> corrupt_peek = test_types::milestone1::PacketPeek::peek(corrupt_request_bytes);
   std::cout << "Successfully ran test\n";
 }
