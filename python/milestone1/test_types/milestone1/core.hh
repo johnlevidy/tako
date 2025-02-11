@@ -89,6 +89,29 @@ private:
     explicit IntegerTypeView(::gsl::span<const ::gsl::byte> _cons_buf) :_buf{ _cons_buf }{}
     ::gsl::span<const ::gsl::byte> _buf;
 };
+class IntegerTypePeek {
+public:
+    using Peek = IntegerTypePeek;
+    static ::tako::ParseInfo<std::optional<Peek>> peek(::gsl::span<const ::gsl::byte> _buf) {
+        auto contained = ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::parse(::tako::unsafe_subspan(_buf, 0));
+        if (!contained) {
+            return ::tako::ParseInfo<std::optional<Peek>>(Peek(_buf), ::tako::unsafe_subspan(_buf, 0));
+        }
+        return ::tako::ParseInfo<std::optional<Peek>>(Peek(gsl::span<const gsl::byte>(_buf.begin(), ::tako::unsafe_subspan(_buf, 1).begin())), ::tako::unsafe_subspan(_buf, 1));
+    }
+    ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::Rendered contained() const {
+        return ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::render(raw_contained());
+    }
+    ::gsl::span<const ::gsl::byte> backing_buffer() const {
+        return _buf;
+    }
+private:
+    ::gsl::span<const ::gsl::byte> raw_contained() const {
+        return ::tako::unsafe_subspan(_buf, 0);
+    }
+    explicit IntegerTypePeek(::gsl::span<const ::gsl::byte> _cons_buf) :_buf{ _cons_buf }{}
+    ::gsl::span<const ::gsl::byte> _buf;
+};
 class BigIntegerType {
 public:
     ::std::int32_t contained;
@@ -160,6 +183,29 @@ public:
     }
 private:
     explicit BigIntegerTypeView(::gsl::span<const ::gsl::byte> _cons_buf) :_buf{ _cons_buf }{}
+    ::gsl::span<const ::gsl::byte> _buf;
+};
+class BigIntegerTypePeek {
+public:
+    using Peek = BigIntegerTypePeek;
+    static ::tako::ParseInfo<std::optional<Peek>> peek(::gsl::span<const ::gsl::byte> _buf) {
+        auto contained = ::tako::PrimitiveView<::std::int32_t, ::tako::Endianness::LITTLE>::parse(::tako::unsafe_subspan(_buf, 0));
+        if (!contained) {
+            return ::tako::ParseInfo<std::optional<Peek>>(Peek(_buf), ::tako::unsafe_subspan(_buf, 0));
+        }
+        return ::tako::ParseInfo<std::optional<Peek>>(Peek(gsl::span<const gsl::byte>(_buf.begin(), ::tako::unsafe_subspan(_buf, 4).begin())), ::tako::unsafe_subspan(_buf, 4));
+    }
+    ::tako::PrimitiveView<::std::int32_t, ::tako::Endianness::LITTLE>::Rendered contained() const {
+        return ::tako::PrimitiveView<::std::int32_t, ::tako::Endianness::LITTLE>::render(raw_contained());
+    }
+    ::gsl::span<const ::gsl::byte> backing_buffer() const {
+        return _buf;
+    }
+private:
+    ::gsl::span<const ::gsl::byte> raw_contained() const {
+        return ::tako::unsafe_subspan(_buf, 0);
+    }
+    explicit BigIntegerTypePeek(::gsl::span<const ::gsl::byte> _cons_buf) :_buf{ _cons_buf }{}
     ::gsl::span<const ::gsl::byte> _buf;
 };
 class SmallIntegerType {
@@ -235,6 +281,29 @@ private:
     explicit SmallIntegerTypeView(::gsl::span<const ::gsl::byte> _cons_buf) :_buf{ _cons_buf }{}
     ::gsl::span<const ::gsl::byte> _buf;
 };
+class SmallIntegerTypePeek {
+public:
+    using Peek = SmallIntegerTypePeek;
+    static ::tako::ParseInfo<std::optional<Peek>> peek(::gsl::span<const ::gsl::byte> _buf) {
+        auto contained = ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::parse(::tako::unsafe_subspan(_buf, 0));
+        if (!contained) {
+            return ::tako::ParseInfo<std::optional<Peek>>(Peek(_buf), ::tako::unsafe_subspan(_buf, 0));
+        }
+        return ::tako::ParseInfo<std::optional<Peek>>(Peek(gsl::span<const gsl::byte>(_buf.begin(), ::tako::unsafe_subspan(_buf, 1).begin())), ::tako::unsafe_subspan(_buf, 1));
+    }
+    ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::Rendered contained() const {
+        return ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::render(raw_contained());
+    }
+    ::gsl::span<const ::gsl::byte> backing_buffer() const {
+        return _buf;
+    }
+private:
+    ::gsl::span<const ::gsl::byte> raw_contained() const {
+        return ::tako::unsafe_subspan(_buf, 0);
+    }
+    explicit SmallIntegerTypePeek(::gsl::span<const ::gsl::byte> _cons_buf) :_buf{ _cons_buf }{}
+    ::gsl::span<const ::gsl::byte> _buf;
+};
 class MiniIntegerType {
 public:
     ::std::int32_t contained;
@@ -306,6 +375,29 @@ public:
     }
 private:
     explicit MiniIntegerTypeView(::gsl::span<const ::gsl::byte> _cons_buf) :_buf{ _cons_buf }{}
+    ::gsl::span<const ::gsl::byte> _buf;
+};
+class MiniIntegerTypePeek {
+public:
+    using Peek = MiniIntegerTypePeek;
+    static ::tako::ParseInfo<std::optional<Peek>> peek(::gsl::span<const ::gsl::byte> _buf) {
+        auto contained = ::tako::PrimitiveView<::std::int32_t, ::tako::Endianness::LITTLE>::parse(::tako::unsafe_subspan(_buf, 0));
+        if (!contained) {
+            return ::tako::ParseInfo<std::optional<Peek>>(Peek(_buf), ::tako::unsafe_subspan(_buf, 0));
+        }
+        return ::tako::ParseInfo<std::optional<Peek>>(Peek(gsl::span<const gsl::byte>(_buf.begin(), ::tako::unsafe_subspan(_buf, 4).begin())), ::tako::unsafe_subspan(_buf, 4));
+    }
+    ::tako::PrimitiveView<::std::int32_t, ::tako::Endianness::LITTLE>::Rendered contained() const {
+        return ::tako::PrimitiveView<::std::int32_t, ::tako::Endianness::LITTLE>::render(raw_contained());
+    }
+    ::gsl::span<const ::gsl::byte> backing_buffer() const {
+        return _buf;
+    }
+private:
+    ::gsl::span<const ::gsl::byte> raw_contained() const {
+        return ::tako::unsafe_subspan(_buf, 0);
+    }
+    explicit MiniIntegerTypePeek(::gsl::span<const ::gsl::byte> _cons_buf) :_buf{ _cons_buf }{}
     ::gsl::span<const ::gsl::byte> _buf;
 };
 class ConfusingIntegerType {
@@ -497,6 +589,85 @@ public:
         return built.size_bytes();
     }
 };
+class ConfusingIntegerTypePeek {
+public:
+    using V = ::std::variant<::test_types::milestone1::MiniIntegerTypePeek, ::test_types::milestone1::SmallIntegerTypePeek>;
+    V value;
+    template <typename T, typename=typename ::std::enable_if<::std::is_constructible<V, T>::value, T>::type>
+    ConfusingIntegerTypePeek(T&& t) : value{::std::forward<T>(t)} {}
+    template <typename... F>
+    auto match(F&&... args) {
+        return accept(::tako::overloaded{::std::forward<F>(args)...});
+    }
+    template <typename... F>
+    auto match(F&&... args) const {
+        return accept(::tako::overloaded{::std::forward<F>(args)...});
+    }
+    template <typename T>
+    auto accept(T&& visitor) {
+        return ::std::visit(::std::forward<T>(visitor), value);
+    }
+    template <typename T>
+    auto accept(T&& visitor) const {
+        return ::std::visit(::std::forward<T>(visitor), value);
+    }
+    template <typename R, typename... F>
+    auto match_unify(F&&... args) {
+        return accept_unify<R>(::tako::overloaded{::std::forward<F>(args)...});
+    }
+    template <typename R, typename... F>
+    auto match_unify(F&&... args) const {
+        return accept_unify<R>(::tako::overloaded{::std::forward<F>(args)...});
+    }
+    template <typename R, typename T>
+    auto accept_unify(T&& visitor) {
+        return ::std::visit(::tako::unify<R>(::std::forward<T>(visitor)), value);
+    }
+    template <typename R, typename T>
+    auto accept_unify(T&& visitor) const {
+        return ::std::visit(::tako::unify<R>(::std::forward<T>(visitor)), value);
+    }
+    template <typename T>
+    ::std::optional<T*> get() {
+        auto x = ::std::get_if<T>(&value);
+        if (x) {
+            return x;
+        } else {
+            return ::std::nullopt;
+        }
+    }
+    template <typename T>
+    ::std::optional<const T*> get() const {
+        auto x = ::std::get_if<T>(&value);
+        if (x) {
+            return x;
+        } else {
+            return ::std::nullopt;
+        }
+    }
+    ::std::int8_t tag() const {
+        return match(
+            [](const ::test_types::milestone1::MiniIntegerTypePeek&) { return static_cast<::std::int8_t>(UINT8_C(0)); },
+            [](const ::test_types::milestone1::SmallIntegerTypePeek&) { return static_cast<::std::int8_t>(UINT8_C(1)); }
+        );
+    }
+    using Peek = ConfusingIntegerTypePeek;
+    static ::tako::ParseInfo<std::optional<Peek>> peek(::gsl::span<const ::gsl::byte> buf, ::std::int8_t tag) {
+        if (tag == static_cast<::std::int8_t>(UINT8_C(0))) {
+            auto maybe = ::test_types::milestone1::MiniIntegerTypePeek::peek(buf);
+            return ::tako::ParseInfo<std::optional<Peek>>(::std::move(maybe.rendered),
+                    maybe.tail
+            );
+        }
+        if (tag == static_cast<::std::int8_t>(UINT8_C(1))) {
+            auto maybe = ::test_types::milestone1::SmallIntegerTypePeek::peek(buf);
+            return ::tako::ParseInfo<std::optional<Peek>>(::std::move(maybe.rendered),
+                    maybe.tail
+            );
+        }
+        return ::tako::ParseInfo<std::optional<Peek>>(std::nullopt, gsl::span<const gsl::byte>(buf.end(), buf.end()));
+    }
+};
 class InnerVariant {
 public:
     ::test_types::milestone1::ConfusingIntegerType inner;
@@ -583,6 +754,38 @@ private:
     explicit InnerVariantView(::gsl::span<const ::gsl::byte> _cons_buf, ::tako::ParseInfo<::test_types::milestone1::ConfusingIntegerTypeView> _cons_info_inner) :_buf{ _cons_buf },_info_inner{ _cons_info_inner }{}
     ::gsl::span<const ::gsl::byte> _buf;
     ::tako::ParseInfo<::test_types::milestone1::ConfusingIntegerTypeView> _info_inner;
+};
+class InnerVariantPeek {
+public:
+    using Peek = InnerVariantPeek;
+    static ::tako::ParseInfo<std::optional<Peek>> peek(::gsl::span<const ::gsl::byte> _buf) {
+        static const auto EMPTY_inner = ::tako::ParseInfo<std::optional<::test_types::milestone1::ConfusingIntegerTypePeek>>(std::nullopt, gsl::span<const ::gsl::byte>());
+        auto inner_injected_key_ = ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::parse(::tako::unsafe_subspan(_buf, 0));
+        if (!inner_injected_key_) {
+            return ::tako::ParseInfo<std::optional<Peek>>(Peek(_buf, EMPTY_inner), ::tako::unsafe_subspan(_buf, 0));
+        }
+        auto inner = ::test_types::milestone1::ConfusingIntegerTypePeek::peek(::tako::unsafe_subspan(_buf, 1), inner_injected_key_->rendered);
+        return ::tako::ParseInfo<std::optional<Peek>>(Peek(gsl::span<const gsl::byte>(_buf.begin(), ::tako::unsafe_subspan(inner.tail, 0).begin()), inner), ::tako::unsafe_subspan(inner.tail, 0));
+    }
+    ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::Rendered inner_injected_key_() const {
+        return ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::render(raw_inner_injected_key_());
+    }
+    ::test_types::milestone1::ConfusingIntegerTypeView::Rendered inner() const {
+        return ::test_types::milestone1::ConfusingIntegerTypeView::render(raw_inner(), inner_injected_key_());
+    }
+    ::gsl::span<const ::gsl::byte> backing_buffer() const {
+        return _buf;
+    }
+private:
+    ::gsl::span<const ::gsl::byte> raw_inner_injected_key_() const {
+        return ::tako::unsafe_subspan(_buf, 0);
+    }
+    ::gsl::span<const ::gsl::byte> raw_inner() const {
+        return ::tako::unsafe_subspan(_buf, 1);
+    }
+    explicit InnerVariantPeek(::gsl::span<const ::gsl::byte> _cons_buf, ::tako::ParseInfo<std::optional<::test_types::milestone1::ConfusingIntegerTypePeek>> _cons_info_inner) :_buf{ _cons_buf },_info_inner{ _cons_info_inner }{}
+    ::gsl::span<const ::gsl::byte> _buf;
+    ::tako::ParseInfo<std::optional<::test_types::milestone1::ConfusingIntegerTypePeek>> _info_inner;
 };
 class Two {
 public:
@@ -788,21 +991,112 @@ public:
         return built.size_bytes();
     }
 };
+class TwoPeek {
+public:
+    using V = ::std::variant<::test_types::milestone1::IntegerTypePeek, ::test_types::milestone1::BigIntegerTypePeek, ::test_types::milestone1::InnerVariantPeek>;
+    V value;
+    template <typename T, typename=typename ::std::enable_if<::std::is_constructible<V, T>::value, T>::type>
+    TwoPeek(T&& t) : value{::std::forward<T>(t)} {}
+    template <typename... F>
+    auto match(F&&... args) {
+        return accept(::tako::overloaded{::std::forward<F>(args)...});
+    }
+    template <typename... F>
+    auto match(F&&... args) const {
+        return accept(::tako::overloaded{::std::forward<F>(args)...});
+    }
+    template <typename T>
+    auto accept(T&& visitor) {
+        return ::std::visit(::std::forward<T>(visitor), value);
+    }
+    template <typename T>
+    auto accept(T&& visitor) const {
+        return ::std::visit(::std::forward<T>(visitor), value);
+    }
+    template <typename R, typename... F>
+    auto match_unify(F&&... args) {
+        return accept_unify<R>(::tako::overloaded{::std::forward<F>(args)...});
+    }
+    template <typename R, typename... F>
+    auto match_unify(F&&... args) const {
+        return accept_unify<R>(::tako::overloaded{::std::forward<F>(args)...});
+    }
+    template <typename R, typename T>
+    auto accept_unify(T&& visitor) {
+        return ::std::visit(::tako::unify<R>(::std::forward<T>(visitor)), value);
+    }
+    template <typename R, typename T>
+    auto accept_unify(T&& visitor) const {
+        return ::std::visit(::tako::unify<R>(::std::forward<T>(visitor)), value);
+    }
+    template <typename T>
+    ::std::optional<T*> get() {
+        auto x = ::std::get_if<T>(&value);
+        if (x) {
+            return x;
+        } else {
+            return ::std::nullopt;
+        }
+    }
+    template <typename T>
+    ::std::optional<const T*> get() const {
+        auto x = ::std::get_if<T>(&value);
+        if (x) {
+            return x;
+        } else {
+            return ::std::nullopt;
+        }
+    }
+    ::std::int8_t tag() const {
+        return match(
+            [](const ::test_types::milestone1::IntegerTypePeek&) { return static_cast<::std::int8_t>(UINT8_C(0)); },
+            [](const ::test_types::milestone1::BigIntegerTypePeek&) { return static_cast<::std::int8_t>(UINT8_C(1)); },
+            [](const ::test_types::milestone1::InnerVariantPeek&) { return static_cast<::std::int8_t>(UINT8_C(2)); }
+        );
+    }
+    using Peek = TwoPeek;
+    static ::tako::ParseInfo<std::optional<Peek>> peek(::gsl::span<const ::gsl::byte> buf, ::std::int8_t tag) {
+        if (tag == static_cast<::std::int8_t>(UINT8_C(0))) {
+            auto maybe = ::test_types::milestone1::IntegerTypePeek::peek(buf);
+            return ::tako::ParseInfo<std::optional<Peek>>(::std::move(maybe.rendered),
+                    maybe.tail
+            );
+        }
+        if (tag == static_cast<::std::int8_t>(UINT8_C(1))) {
+            auto maybe = ::test_types::milestone1::BigIntegerTypePeek::peek(buf);
+            return ::tako::ParseInfo<std::optional<Peek>>(::std::move(maybe.rendered),
+                    maybe.tail
+            );
+        }
+        if (tag == static_cast<::std::int8_t>(UINT8_C(2))) {
+            auto maybe = ::test_types::milestone1::InnerVariantPeek::peek(buf);
+            return ::tako::ParseInfo<std::optional<Peek>>(::std::move(maybe.rendered),
+                    maybe.tail
+            );
+        }
+        return ::tako::ParseInfo<std::optional<Peek>>(std::nullopt, gsl::span<const gsl::byte>(buf.end(), buf.end()));
+    }
+};
 class Packet {
 public:
     ::std::int32_t one;
     ::test_types::milestone1::Two two;
     ::std::uint32_t three;
+    ::test_types::milestone1::Two four;
+    ::std::uint32_t five;
     ::gsl::span<::gsl::byte> serialize_into(::gsl::span<::gsl::byte> buf) const {
         buf = ::tako::PrimitiveView<::std::int32_t, ::tako::Endianness::LITTLE>::serialize_into(one, buf);
         buf = ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::serialize_into(two.tag(), buf);
         buf = ::test_types::milestone1::TwoView::serialize_into(two, buf);
         buf = ::tako::PrimitiveView<::std::uint32_t, ::tako::Endianness::LITTLE>::serialize_into(three, buf);
+        buf = ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::serialize_into(four.tag(), buf);
+        buf = ::test_types::milestone1::TwoView::serialize_into(four, buf);
+        buf = ::tako::PrimitiveView<::std::uint32_t, ::tako::Endianness::LITTLE>::serialize_into(five, buf);
         return buf;
     }
     using Buffer = ::std::vector<::gsl::byte>;
     size_t size_bytes() const {
-        return 9 + ::test_types::milestone1::TwoView::size_bytes(two);
+        return 14 + ::test_types::milestone1::TwoView::size_bytes(two) + ::test_types::milestone1::TwoView::size_bytes(four);
     }
     Buffer serialize() const {
         Buffer result{size_bytes()};
@@ -810,7 +1104,7 @@ public:
         return result;
     }
     bool operator ==(const Packet& _other) const {
-        return one == _other.one && two == _other.two && three == _other.three;
+        return one == _other.one && two == _other.two && three == _other.three && four == _other.four && five == _other.five;
     }
     bool operator !=(const Packet& _other) const {
         return !(*this == _other);
@@ -826,6 +1120,8 @@ public:
             .one = ::tako::PrimitiveView<::std::int32_t, ::tako::Endianness::LITTLE>::build(rendered.one()),
             .two = ::test_types::milestone1::TwoView::build(rendered.two()),
             .three = ::tako::PrimitiveView<::std::uint32_t, ::tako::Endianness::LITTLE>::build(rendered.three()),
+            .four = ::test_types::milestone1::TwoView::build(rendered.four()),
+            .five = ::tako::PrimitiveView<::std::uint32_t, ::tako::Endianness::LITTLE>::build(rendered.five()),
         };
     }
     Built build() const {
@@ -833,9 +1129,11 @@ public:
     }
     static Rendered render(::gsl::span<const ::gsl::byte> _buf) {
         auto two = ::test_types::milestone1::TwoView::parse(::tako::unsafe_subspan(_buf, 5), ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::render(::tako::unsafe_subspan(_buf, 4))).value();
+        auto four = ::test_types::milestone1::TwoView::parse(::tako::unsafe_subspan(two.tail, 5), ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::render(::tako::unsafe_subspan(two.tail, 4))).value();
         return Rendered {
             _buf,
-            ::std::move(two)
+            ::std::move(two),
+            ::std::move(four)
         };
     }
     static ::tako::ParseResult<Rendered> parse(::gsl::span<const ::gsl::byte> _buf) {
@@ -847,15 +1145,24 @@ public:
         if (!two) {
             return ::tl::make_unexpected(two.error());
         }
-        if (::tako::unsafe_subspan(two->tail, 4).data() > _buf.end()) {
+        auto four_injected_key_ = ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::parse(::tako::unsafe_subspan(two->tail, 4));
+        if (!four_injected_key_) {
+            return ::tl::make_unexpected(four_injected_key_.error());
+        }
+        auto four = ::test_types::milestone1::TwoView::parse(::tako::unsafe_subspan(two->tail, 5), four_injected_key_->rendered);
+        if (!four) {
+            return ::tl::make_unexpected(four.error());
+        }
+        if (::tako::unsafe_subspan(four->tail, 4).data() > _buf.end()) {
             return ::tl::make_unexpected(::tako::ParseError::NOT_ENOUGH_DATA);
         }
         return ::tako::ParseResult<Rendered>(tl::in_place,
             Rendered {
                 _buf,
-                ::std::move(*two)
+                ::std::move(*two),
+                ::std::move(*four)
             },
-            ::tako::unsafe_subspan(two->tail, 4)
+            ::tako::unsafe_subspan(four->tail, 4)
         );
     }
     static gsl::span<gsl::byte> serialize_into(const Built& built, gsl::span<gsl::byte> buf) {
@@ -876,6 +1183,15 @@ public:
     ::gsl::span<const ::gsl::byte> raw_three() const {
         return ::tako::unsafe_subspan(_info_two.tail, 0);
     }
+    ::gsl::span<const ::gsl::byte> raw_four_injected_key_() const {
+        return ::tako::unsafe_subspan(_info_two.tail, 4);
+    }
+    ::gsl::span<const ::gsl::byte> raw_four() const {
+        return ::tako::unsafe_subspan(_info_two.tail, 5);
+    }
+    ::gsl::span<const ::gsl::byte> raw_five() const {
+        return ::tako::unsafe_subspan(_info_four.tail, 0);
+    }
     ::tako::PrimitiveView<::std::int32_t, ::tako::Endianness::LITTLE>::Rendered one() const {
         return ::tako::PrimitiveView<::std::int32_t, ::tako::Endianness::LITTLE>::render(raw_one());
     }
@@ -888,13 +1204,104 @@ public:
     ::tako::PrimitiveView<::std::uint32_t, ::tako::Endianness::LITTLE>::Rendered three() const {
         return ::tako::PrimitiveView<::std::uint32_t, ::tako::Endianness::LITTLE>::render(raw_three());
     }
+    ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::Rendered four_injected_key_() const {
+        return ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::render(raw_four_injected_key_());
+    }
+    ::test_types::milestone1::TwoView::Rendered four() const {
+        return ::test_types::milestone1::TwoView::render(raw_four(), four_injected_key_());
+    }
+    ::tako::PrimitiveView<::std::uint32_t, ::tako::Endianness::LITTLE>::Rendered five() const {
+        return ::tako::PrimitiveView<::std::uint32_t, ::tako::Endianness::LITTLE>::render(raw_five());
+    }
     ::gsl::span<const ::gsl::byte> backing_buffer() const {
         return _buf;
     }
 private:
-    explicit PacketView(::gsl::span<const ::gsl::byte> _cons_buf, ::tako::ParseInfo<::test_types::milestone1::TwoView> _cons_info_two) :_buf{ _cons_buf },_info_two{ _cons_info_two }{}
+    explicit PacketView(::gsl::span<const ::gsl::byte> _cons_buf, ::tako::ParseInfo<::test_types::milestone1::TwoView> _cons_info_two, ::tako::ParseInfo<::test_types::milestone1::TwoView> _cons_info_four) :_buf{ _cons_buf },_info_two{ _cons_info_two },_info_four{ _cons_info_four }{}
     ::gsl::span<const ::gsl::byte> _buf;
     ::tako::ParseInfo<::test_types::milestone1::TwoView> _info_two;
+    ::tako::ParseInfo<::test_types::milestone1::TwoView> _info_four;
+};
+class PacketPeek {
+public:
+    using Peek = PacketPeek;
+    static ::tako::ParseInfo<std::optional<Peek>> peek(::gsl::span<const ::gsl::byte> _buf) {
+        static const auto EMPTY_two = ::tako::ParseInfo<std::optional<::test_types::milestone1::TwoPeek>>(std::nullopt, gsl::span<const ::gsl::byte>());
+        static const auto EMPTY_four = ::tako::ParseInfo<std::optional<::test_types::milestone1::TwoPeek>>(std::nullopt, gsl::span<const ::gsl::byte>());
+        auto one = ::tako::PrimitiveView<::std::int32_t, ::tako::Endianness::LITTLE>::parse(::tako::unsafe_subspan(_buf, 0));
+        if (!one) {
+            return ::tako::ParseInfo<std::optional<Peek>>(Peek(_buf, EMPTY_two, EMPTY_four), ::tako::unsafe_subspan(_buf, 0));
+        }
+        auto two_injected_key_ = ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::parse(::tako::unsafe_subspan(_buf, 4));
+        if (!two_injected_key_) {
+            return ::tako::ParseInfo<std::optional<Peek>>(Peek(_buf, EMPTY_two, EMPTY_four), ::tako::unsafe_subspan(_buf, 4));
+        }
+        auto two = ::test_types::milestone1::TwoPeek::peek(::tako::unsafe_subspan(_buf, 5), two_injected_key_->rendered);
+        auto three = ::tako::PrimitiveView<::std::uint32_t, ::tako::Endianness::LITTLE>::parse(::tako::unsafe_subspan(two.tail, 0));
+        if (!three) {
+            return ::tako::ParseInfo<std::optional<Peek>>(Peek(_buf, two, EMPTY_four), ::tako::unsafe_subspan(two.tail, 0));
+        }
+        auto four_injected_key_ = ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::parse(::tako::unsafe_subspan(two.tail, 4));
+        if (!four_injected_key_) {
+            return ::tako::ParseInfo<std::optional<Peek>>(Peek(_buf, two, EMPTY_four), ::tako::unsafe_subspan(two.tail, 4));
+        }
+        auto four = ::test_types::milestone1::TwoPeek::peek(::tako::unsafe_subspan(two.tail, 5), four_injected_key_->rendered);
+        auto five = ::tako::PrimitiveView<::std::uint32_t, ::tako::Endianness::LITTLE>::parse(::tako::unsafe_subspan(four.tail, 0));
+        if (!five) {
+            return ::tako::ParseInfo<std::optional<Peek>>(Peek(_buf, two, four), ::tako::unsafe_subspan(four.tail, 0));
+        }
+        return ::tako::ParseInfo<std::optional<Peek>>(Peek(gsl::span<const gsl::byte>(_buf.begin(), ::tako::unsafe_subspan(four.tail, 4).begin()), two, four), ::tako::unsafe_subspan(four.tail, 4));
+    }
+    ::tako::PrimitiveView<::std::int32_t, ::tako::Endianness::LITTLE>::Rendered one() const {
+        return ::tako::PrimitiveView<::std::int32_t, ::tako::Endianness::LITTLE>::render(raw_one());
+    }
+    ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::Rendered two_injected_key_() const {
+        return ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::render(raw_two_injected_key_());
+    }
+    ::test_types::milestone1::TwoView::Rendered two() const {
+        return ::test_types::milestone1::TwoView::render(raw_two(), two_injected_key_());
+    }
+    ::tako::PrimitiveView<::std::uint32_t, ::tako::Endianness::LITTLE>::Rendered three() const {
+        return ::tako::PrimitiveView<::std::uint32_t, ::tako::Endianness::LITTLE>::render(raw_three());
+    }
+    ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::Rendered four_injected_key_() const {
+        return ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::render(raw_four_injected_key_());
+    }
+    ::test_types::milestone1::TwoView::Rendered four() const {
+        return ::test_types::milestone1::TwoView::render(raw_four(), four_injected_key_());
+    }
+    ::tako::PrimitiveView<::std::uint32_t, ::tako::Endianness::LITTLE>::Rendered five() const {
+        return ::tako::PrimitiveView<::std::uint32_t, ::tako::Endianness::LITTLE>::render(raw_five());
+    }
+    ::gsl::span<const ::gsl::byte> backing_buffer() const {
+        return _buf;
+    }
+private:
+    ::gsl::span<const ::gsl::byte> raw_one() const {
+        return ::tako::unsafe_subspan(_buf, 0);
+    }
+    ::gsl::span<const ::gsl::byte> raw_two_injected_key_() const {
+        return ::tako::unsafe_subspan(_buf, 4);
+    }
+    ::gsl::span<const ::gsl::byte> raw_two() const {
+        return ::tako::unsafe_subspan(_buf, 5);
+    }
+    ::gsl::span<const ::gsl::byte> raw_three() const {
+        return ::tako::unsafe_subspan(_info_two.tail, 0);
+    }
+    ::gsl::span<const ::gsl::byte> raw_four_injected_key_() const {
+        return ::tako::unsafe_subspan(_info_two.tail, 4);
+    }
+    ::gsl::span<const ::gsl::byte> raw_four() const {
+        return ::tako::unsafe_subspan(_info_two.tail, 5);
+    }
+    ::gsl::span<const ::gsl::byte> raw_five() const {
+        return ::tako::unsafe_subspan(_info_four.tail, 0);
+    }
+    explicit PacketPeek(::gsl::span<const ::gsl::byte> _cons_buf, ::tako::ParseInfo<std::optional<::test_types::milestone1::TwoPeek>> _cons_info_two, ::tako::ParseInfo<std::optional<::test_types::milestone1::TwoPeek>> _cons_info_four) :_buf{ _cons_buf },_info_two{ _cons_info_two },_info_four{ _cons_info_four }{}
+    ::gsl::span<const ::gsl::byte> _buf;
+    ::tako::ParseInfo<std::optional<::test_types::milestone1::TwoPeek>> _info_two;
+    ::tako::ParseInfo<std::optional<::test_types::milestone1::TwoPeek>> _info_four;
 };
 }
 }

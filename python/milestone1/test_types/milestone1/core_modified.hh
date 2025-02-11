@@ -10,6 +10,7 @@
 #include <variant>
 #include <stdexcept>
 #include <optional>
+#include "gsl/gsl-lite.hpp"
 #include "tako/tako.hh"
 
 #pragma GCC diagnostic push
@@ -816,6 +817,55 @@ public:
         return !(*this == _other);
     }
 private:
+};
+class PacketPeek {
+public:
+    static PacketPeek peek(::gsl::span<const ::gsl::byte> _buf) {
+        // TODO add prasing of the initial types in here...
+        auto two_injected_key_ = ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::parse(::tako::unsafe_subspan(_buf, 4));
+        if (!two_injected_key_) {
+            return PacketPeek(gsl::span<gsl::byte>(_buf.begin(), _buf.begin() + 0), ::test_types::milestone1::TwoPeek::EMPTY);
+        }
+        // TODO do we want to return "key good to read" in a case like this? maybe it's fine now?
+        auto two = ::test_types::milestone1::TwoPeek::peek(::tako::unsafe_subspan(_buf, 5), two_injected_key_->rendered);
+        if (::tako::unsafe_subspan(two->tail, 4).data() > _buf.end()) {
+            return PacketPeek(gsl::span<gsl::byte>(_buf.begin(), _buf.begin() + two->tail), ::test_types::milestone1::TwoPeek::EMPTY);
+        }
+        return PacketPeek(gsl::span<gsl::byte>(_buf.begin(), _buf.begin() + two->tail + 4), ::test_types::milestone1::TwoPeek::EMPTY);
+    }
+
+    ::gsl::span<const ::gsl::byte> raw_one() const {
+        return ::tako::unsafe_subspan(_buf, 0);
+    }
+    ::gsl::span<const ::gsl::byte> raw_two_injected_key_() const {
+        return ::tako::unsafe_subspan(_buf, 4);
+    }
+    ::gsl::span<const ::gsl::byte> raw_two() const {
+        return ::tako::unsafe_subspan(_buf, 5);
+    }
+    ::gsl::span<const ::gsl::byte> raw_three() const {
+        return ::tako::unsafe_subspan(_info_two.tail, 0);
+    }
+    std::optional<::tako::PrimitiveView<::std::int32_t, ::tako::Endianness::LITTLE>::Rendered> one() const {
+        return ::tako::PrimitiveView<::std::int32_t, ::tako::Endianness::LITTLE>::render(raw_one());
+    }
+    std::optional<::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::Rendered> two_injected_key_() const {
+        return ::tako::PrimitiveView<::std::int8_t, ::tako::Endianness::LITTLE>::render(raw_two_injected_key_());
+    }
+    ::test_types::milestone1::TwoPeek two() const {
+        return _info_two;
+    }
+    std::optional<::tako::PrimitiveView<::std::uint32_t, ::tako::Endianness::LITTLE>::Rendered> three() const {
+        return ::tako::PrimitiveView<::std::uint32_t, ::tako::Endianness::LITTLE>::render(raw_three());
+    }
+    ::gsl::span<const ::gsl::byte> backing_buffer() const {
+        return _buf;
+    }
+private:
+    static const PacketPeek EMPTY = PacketPeek(::gsl::span<const ::gsl::byte>(), ::test_types::milestone1::TwoPeek::EMPTY);
+    explicit PacketPeek(::gsl::span<const ::gsl::byte> _cons_buf, ::test_types::milestone1::TwoPeek _cons_info_two) :_buf{ _cons_buf },_info_two{ _cons_info_two }{}
+    ::gsl::span<const ::gsl::byte> _buf;
+    ::test_types::milestone1::TwoPeek _info_two;
 };
 class PacketView {
 public:
