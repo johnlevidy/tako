@@ -308,7 +308,7 @@ def gen_peek_block(fname: str, field: tir.Field, src_buf: str, dynamic_args: str
                 """\
                     auto {{ fname }} = {{ fctype }}::parse({{ args }});
                     if (!{{ fname }}) {
-                        return ::tako::ParseInfo<std::optional<Peek>>(Peek(_buf{{dynamic_args}}), {{offset}});
+                        return ::tako::ParseInfo<std::optional<Peek>>(Peek(gsl::span<const gsl::byte>(_buf.begin(), {{offset}}.begin()){{dynamic_args}}), {{offset}});
                     }
                 """,
                 locals()
@@ -317,6 +317,9 @@ def gen_peek_block(fname: str, field: tir.Field, src_buf: str, dynamic_args: str
         return gen_raw(
             """\
                 auto {{ fname }} = {{ ptype }}::peek({{args}});
+                if (!{{fname}}.rendered) {
+                    return ::tako::ParseInfo<std::optional<Peek>>(Peek(gsl::span<const gsl::byte>(_buf.begin(), {{offset}}.begin()){{dynamic_args}}), {{offset}});
+                }
             """,
             locals()
         )
