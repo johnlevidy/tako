@@ -104,6 +104,54 @@ def to_namespace(parts: t.Iterable[str]) -> str:
 def qname_to_cpp(qname: QName) -> str:
     return to_namespace(qname.parts)
 
+@dataclasses.dataclass
+class PeekCppType(tir.TypeVisitor[str]):
+    @staticmethod
+    def get_local_struct(type_: tir.Struct) -> str:
+        return f"{type_.name.name()}Peek"
+
+    @staticmethod
+    def get_local_enum(type_: tir.Enum) -> str:
+        return f"{type_.name.name()}"
+
+    @staticmethod
+    def get_local_variant(type_: tir.Variant) -> str:
+        return f"{type_.name.name()}Peek"
+
+    def visit_int(self, type_: tir.Int) -> str:
+        return f"::tako::PrimitivePeek<{cint_type(type_.width, type_.sign)}, {endianness_to_cpp(type_.endianness)}>"
+
+    def visit_float(self, type_: tir.Float) -> str:
+        return f"::tako::PrimitivePeek<{cfloat_type(type_.width)}, {endianness_to_cpp(type_.endianness)}>"
+
+    def visit_array(self, type_: tir.Array) -> str:
+        return f"::tako::ArrayPeek<{type_.inner.accept(self)}, {type_.length}>"
+
+    def visit_vector(self, type_: tir.Vector) -> str:
+        return f"::tako::VectorPeek<{type_.inner.accept(self)}>"
+
+    def visit_list(self, type_: tir.List) -> str:
+        return f"::tako::ListPeek<{type_.inner.accept(self)}>"
+
+    def visit_detached_variant(self, type_: tir.DetachedVariant) -> str:
+        return type_.variant.accept(self)
+
+    def visit_virtual(self, type_: tir.Virtual) -> str:
+        return type_.inner.accept(self)
+
+    def visit_struct(self, root: tir.Struct) -> str:
+        return self.namespace(root, PeekCppType.get_local_struct(root))
+
+    def visit_variant(self, root: tir.Variant) -> str:
+        return self.namespace(root, PeekCppType.get_local_variant(root))
+
+    def visit_enum(self, root: tir.Enum) -> str:
+        return self.namespace(root, PeekCppType.get_local_enum(root))
+
+    def namespace(self, type_: tir.RootType, local_name: str) -> str:
+        return qname_to_cpp(
+            protocol_namespace(type_.name.namespace()).with_name(local_name)
+        )
 
 @dataclasses.dataclass
 class ViewCppType(tir.TypeVisitor[str]):

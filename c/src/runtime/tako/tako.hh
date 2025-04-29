@@ -24,6 +24,12 @@
 
 namespace tako {
 
+// Returns the span whose starting address is lower.
+gsl::span<const gsl::byte> min_span_by_begin(gsl::span<const gsl::byte> span1,
+                                             gsl::span<const gsl::byte> span2) {
+    return (span1.begin() < span2.begin()) ? span1 : span2;
+}
+
 template <typename T>
 struct ParseInfo {
     ParseInfo(T r, gsl::span<const gsl::byte> t): rendered{std::move(r)}, tail{t} {};

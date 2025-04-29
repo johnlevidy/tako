@@ -37,6 +37,7 @@ from tako.generators.cpp.types import (  # noqa
     relative_path,
     wrap_in_namespace,
     protocol_namespace,
+    PeekCppType,
     ViewCppType,
     OwnedCppType,
     cint_type,
@@ -125,10 +126,10 @@ class RootConstantGenerator(kir.RootConstantVisitor[cg.Node]):
 @dataclasses.dataclass
 class RootTypeGenerator(tir.RootTypeVisitor[cg.Node]):
     def visit_struct(self, root: tir.Struct) -> cg.Node:
-        return cg.Section([gen_owned_class(root), gen_view_class(root)])
+        return cg.Section([gen_owned_class(root), gen_view_class(root), gen_peek_class(root)])
 
     def visit_variant(self, root: tir.Variant) -> cg.Node:
-        return cg.Section([gen_owned_variant(root), gen_view_variant(root)])
+        return cg.Section([gen_owned_variant(root), gen_view_variant(root), gen_peek_variant(root)])
 
     def visit_enum(self, root: tir.Enum) -> cg.Node:
         return gen_enum(root)
@@ -248,6 +249,126 @@ class StructSizer(st.SizeVisitor[ClassParts]):
             )
         )
 
+def gen_peek(struct: tir.Struct) -> cg.Node:
+    body: t.List[cg.Node] = []
+    last_field_trivial = False
+
+    # Used to store the return values for sub-peeks ( dynamics )
+    dynamics = []
+    for fname, field in struct.get_non_virtual_dynamic():
+        dynamics.append(fname)
+        ptype = field.type_.accept(PeekCppType())
+        body.append(gen_raw(f"static const auto EMPTY_{fname} = ::tako::ParseInfo<std::optional<{ptype}>>(std::nullopt, gsl::span<const ::gsl::byte>());", locals()))
+    
+    # The conditional blocks
+    visited_dynamics = set()
+    for fname, field in struct.get_non_virtual():
+        visited_dynamics.add(fname)
+        dynamic_args = ', '.join([""] + [d if d in visited_dynamics else f"EMPTY_{d}" for d in dynamics])
+        body.append(gen_peek_block(fname, field, "_buf", dynamic_args))
+
+    tail_offset_expr = cpp_offset_expr(struct.tail_offset, "_buf", "", ".")
+    body += [
+        gen_raw(
+            """\
+                    return ::tako::ParseInfo<std::optional<Peek>>(Peek(gsl::span<const gsl::byte>(_buf.begin(), {{tail_offset_expr}}.begin()){{dynamic_args}}), {{tail_offset_expr}});
+        """,
+            locals(),
+        )
+    ]
+
+    return cg.Function(
+        "peek",
+        [(cg.Type("::gsl::span<const ::gsl::byte>"), "_buf")],
+        cg.Type(f"::tako::ParseInfo<std::optional<Peek>>"),
+        cg.Section(body),
+        static=True,
+    )
+
+
+def gen_peek_block(fname: str, field: tir.Field, src_buf: str, dynamic_args: str) -> cg.Node:
+    def resolve_arg(x: t.Union[int, str]) -> str:
+        if isinstance(x, int):
+            return str(x)
+        elif isinstance(x, str):
+            return f"{x}->rendered"
+        else:
+            assert_never(x)
+
+    fctype = field.type_.accept(ViewCppType())
+    ptype = field.type_.accept(PeekCppType())
+    offset = cpp_offset_expr(field.offset, src_buf, "", ".")
+    args = ", ".join(
+        [offset]
+        + resolve_field_args(resolve_arg, field.type_)
+    )
+    # Somewhere in here I also need to figure out "do I know my own length" or not
+    if field.type_.trivial:
+        return gen_raw(
+                """\
+                    auto {{ fname }} = {{ fctype }}::parse({{ args }});
+                    if (!{{ fname }}) {
+                        return ::tako::ParseInfo<std::optional<Peek>>(Peek(gsl::span<const gsl::byte>(_buf.begin(), {{offset}}.begin()){{dynamic_args}}), {{offset}});
+                    }
+                """,
+                locals()
+            )
+    else:
+        return gen_raw(
+            """\
+                auto {{ fname }} = {{ ptype }}::peek({{args}});
+                if (!{{fname}}.rendered) {
+                    return ::tako::ParseInfo<std::optional<Peek>>(Peek(gsl::span<const gsl::byte>(_buf.begin(), {{offset}}.begin()){{dynamic_args}}), {{offset}});
+                }
+            """,
+            locals()
+        )
+
+
+def gen_peek_class(struct: tir.Struct) -> cg.Node:
+    class_name = PeekCppType.get_local_struct(struct)
+    print(class_name)
+    builder = ClassBuilder()
+    builder.public.append(gen_raw("using Peek = {{class_name}};", locals()))
+    builder.public.append(gen_peek(struct))
+    builder.private += [
+        gen_raw_getter(fname, field) for fname, field in struct.get_non_virtual()
+    ]
+    # Virtual fields get getters, but not raw getters.
+    builder.public += [
+        gen_getter(fname, field) for fname, field in struct.fields.items()
+    ]
+    builder.public.append(
+        gen_raw(
+            """\
+            ::gsl::span<const ::gsl::byte> backing_buffer() const {
+                return _buf;
+            }""",
+            locals(),
+        )
+    )
+
+    member_info = [("_buf", "::gsl::span<const ::gsl::byte>")] + [
+        (f"_info_{fname}", f"::tako::ParseInfo<std::optional<{field.type_.accept(PeekCppType())}>>")
+        for fname, field in struct.get_non_virtual_dynamic()
+    ]
+    builder.private += [
+        gen_raw(
+            """\
+            explicit {{ class_name }}({%- for name, ctype in member_info -%}
+                {{ ctype }} _cons{{ name }}{{ ", " if not loop.last }}
+                {%- endfor -%}) :
+            {%- for name, _ in member_info -%}
+                {{ name }}{ _cons{{ name }} }{{ "," if not loop.last }}
+            {%- endfor -%} {}
+            {%- for name, ctype in member_info%}
+            {{ ctype }} {{ name }};
+            {%- endfor %}""",
+            locals(),
+        )
+    ]
+
+    return cg.Class(name=class_name, bases=[], sections=builder.finalize())
 
 def gen_view_class(struct: tir.Struct) -> cg.Node:
     class_name = ViewCppType.get_local_struct(struct)
@@ -592,6 +713,42 @@ def gen_owned_variant(root: tir.Variant) -> cg.Node:
         ),
     )
 
+
+def gen_peek_variant(root: tir.Variant) -> cg.Node:
+    peek_class_name = PeekCppType.get_local_variant(root)
+    owned_ctype = root.accept(OwnedCppType())
+    tag_ctype = root.tag_type.accept(OwnedCppType())
+    variants = [
+        (
+            variant_type.accept(PeekCppType()),
+            cint_literal(root.tag_type.width, root.tag_type.sign, tag_value),
+        )
+        for variant_type, tag_value in root.tags.items()
+    ]
+    return gen_variant_class(
+        root,
+        PeekCppType(),
+        cg.Section(
+            [
+                gen_raw(
+                    """\
+                using Peek = {{ peek_class_name }};
+                static ::tako::ParseInfo<std::optional<Peek>> peek(::gsl::span<const ::gsl::byte> buf, {{ tag_ctype }} tag) {
+                    {%- for variant_type, tag_value in variants %}
+                    if (tag == {{ tag_value }}) {
+                        auto maybe = {{ variant_type }}::peek(buf);
+                        return ::tako::ParseInfo<std::optional<Peek>>(::std::move(maybe.rendered),
+                                maybe.tail
+                        );
+                    }
+                    {%- endfor %}
+                    return ::tako::ParseInfo<std::optional<Peek>>(std::nullopt, gsl::span<const gsl::byte>(buf.end(), buf.end()));
+                }""",
+                locals(),
+                ),
+            ]
+        ),
+    )
 
 def gen_view_variant(root: tir.Variant) -> cg.Node:
     view_class_name = ViewCppType.get_local_variant(root)
